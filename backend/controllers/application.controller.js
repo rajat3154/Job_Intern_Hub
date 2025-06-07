@@ -1,18 +1,36 @@
 import { Application } from "../models/application.model.js";
 import { Job } from "../models/job.model.js";
 import { Student } from "../models/student.model.js"; 
-
-
+import { Notification } from "../models/Notification.js";
+import { getIO } from "../socket/socket.js";
 
 export const applyJob = async (req, res) => {
       try {
             const jobId = req.params.id;
             const userId = req.user._id; // Get user ID from authenticated request
 
+            // Get the job details first
+            const job = await Job.findById(jobId).populate('created_by');
+            if (!job) {
+                  return res.status(404).json({
+                        success: false,
+                        message: "Job not found"
+                  });
+            }
+
+            // Get student details for notification
+            const student = await Student.findById(userId);
+            if (!student) {
+                  return res.status(404).json({
+                        success: false,
+                        message: "Student not found"  
+                  });
+            }
+
             // Create application with applicant field
             const application = await Application.create({
                   job: jobId,
-                  applicant: userId, // Add the applicant field
+                  applicant: userId,
                   status: 'pending',
                   ...req.body
             });
@@ -21,6 +39,21 @@ export const applyJob = async (req, res) => {
             await Job.findByIdAndUpdate(jobId, {
                   $addToSet: { applications: application._id }
             });
+
+            // Create notification for recruiter
+            const notification = await Notification.create({
+                  recipient: job.created_by._id,
+                  sender: userId,
+                  senderModel: 'Student',
+                  type: 'application',
+                  title: 'New Job Application',
+                  message: `${student.fullname} applied for "${job.title}"`,
+                  read: false
+            });            // Get initialized socket instance and emit notification
+            const io = getIO();
+            if (io) {
+                io.to(job.created_by._id.toString()).emit('newNotification', notification);
+            }
 
             return res.status(201).json({
                   success: true,
