@@ -6,6 +6,8 @@ import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { setAllJobs } from "@/redux/jobSlice";
 import PostJob from "./recruiter/PostJob";
+import { Bookmark, BookmarkCheck } from "lucide-react";
+import { toast } from "sonner";
 
 const Jobs = () => {
   const navigate = useNavigate();
@@ -14,7 +16,72 @@ const Jobs = () => {
   const { allJobs, searchedQuery } = useSelector((store) => store.job);
   const [filterJobs, setFilterJobs] = useState(allJobs);
   const [showPostJob, setShowPostJob] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const [currentJobId, setCurrentJobId] = useState(null);
 
+  useEffect(() => {
+    // Check if job is saved when component mounts or job changes
+    const checkIfJobSaved = async () => {
+      if (!user || !currentJobId) return;
+      try {
+        const response = await fetch(
+          `http://localhost:8000/api/v1/job/is-saved/${currentJobId}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+          }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          setIsSaved(data.isSaved);
+        }
+      } catch (error) {
+        console.error("Error checking saved status:", error);
+      }
+    };
+
+    checkIfJobSaved();
+  }, [currentJobId, user]);
+
+  const handleSaveJob = async (e, jobId) => {
+    e.stopPropagation();
+    if (!user) {
+      navigate("/signup");
+      return;
+    }
+
+    setCurrentJobId(jobId);
+
+    try {
+      const response = await fetch(
+        `http://localhost:8000/api/v1/job/save-job/${jobId}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to save job");
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        setIsSaved(data.isSaved);
+        toast.success(data.message);
+      }
+    } catch (error) {
+      console.error("Error saving job:", error);
+      toast.error("Failed to save job");
+    }
+  };
   const fetchJobs = async () => {
     try {
       const response = await fetch(
@@ -190,12 +257,21 @@ const Jobs = () => {
                       className="px-3 py-1 bg-purple-500 border-purple-500 text-white text-sm font-bold rounded-md hover:bg-purple-600 cursor-pointer"
                     >
                       View Details
-                    </Button>
-                    <Button
-                      onClick={(e) => handleButtonClick(e, job._id)}
-                      className="px-3 py-1 bg-green-500 border-green-500 text-white text-sm font-bold rounded-md hover:bg-green-600 cursor-pointer"
+                    </Button>                    <Button
+                      onClick={(e) => handleSaveJob(e, job._id)}
+                      variant="outline"
+                      className={`px-3 py-1 text-sm font-bold rounded-md flex items-center gap-2 ${
+                        isSaved && currentJobId === job._id
+                          ? "bg-blue-500 hover:bg-blue-600"
+                          : "bg-gray-600 hover:bg-gray-700"
+                      }`}
                     >
-                      Apply Now
+                      {isSaved && currentJobId === job._id ? (
+                        <BookmarkCheck size={16} />
+                      ) : (
+                        <Bookmark size={16} />
+                      )}
+                      {isSaved && currentJobId === job._id ? "Saved" : "Save Job"}
                     </Button>
                   </div>
 

@@ -13,6 +13,34 @@ const LatestJobCards = ({ job }) => {
   const { user } = useSelector((store) => store.auth);
   const [isSaved, setIsSaved] = useState(false);
 
+  useEffect(() => {
+    // Check if job is saved when component mounts
+    const checkIfJobSaved = async () => {
+      if (!user) return;
+      try {
+        const response = await fetch(
+          `http://localhost:8000/api/v1/job/is-saved/${job._id}`,
+          {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            credentials: 'include'
+          }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          setIsSaved(data.isSaved);
+        }
+      } catch (error) {
+        console.error('Error checking saved status:', error);
+      }
+    };
+
+    checkIfJobSaved();
+  }, [job._id, user]);
+
   const handleSaveJob = async (e) => {
     e.stopPropagation();
     if (!user) {
@@ -20,9 +48,8 @@ const LatestJobCards = ({ job }) => {
       return;
     }
 
-    try {
-      const response = await fetch(
-        `http://localhost:8000/api/v1/save-job/${job._id}`,
+    try {      const response = await fetch(
+        `http://localhost:8000/api/v1/job/save-job/${job._id}`,
         {
           method: 'POST',
           headers: {

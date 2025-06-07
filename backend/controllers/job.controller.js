@@ -162,3 +162,72 @@ export const getLatestJobs = async (req, res) => {
             res.status(500).json({ success: false, message: "Internal Server Error" });
       }
 };
+
+export const isJobSaved = async (req, res) => {
+      try {
+            const jobId = req.params.id;
+            const userId = req.user._id;
+
+            const student = await Student.findById(userId);
+            if (!student) {
+                  return res.status(404).json({
+                        success: false,
+                        message: "Student not found"
+                  });
+            }
+
+            const isSaved = student.savedJobs.includes(jobId);
+            return res.status(200).json({
+                  success: true,
+                  isSaved
+            });
+      } catch (error) {
+            console.error("Error checking saved job status:", error);
+            return res.status(500).json({
+                  success: false,
+                  message: "Error checking saved status"
+            });
+      }
+};
+
+export const saveJob = async (req, res) => {
+      try {
+            const jobId = req.params.id;
+            const userId = req.user._id;
+
+            const student = await Student.findById(userId);
+            if (!student) {
+                  return res.status(404).json({
+                        success: false,
+                        message: "Student not found"
+                  });
+            }
+
+            const isAlreadySaved = student.savedJobs.includes(jobId);
+            if (isAlreadySaved) {
+                  // If already saved, remove it (unsave)
+                  student.savedJobs = student.savedJobs.filter(id => id.toString() !== jobId);
+                  await student.save();
+                  return res.status(200).json({
+                        success: true,
+                        isSaved: false,
+                        message: "Job unsaved successfully"
+                  });
+            } else {
+                  // If not saved, add it
+                  student.savedJobs.push(jobId);
+                  await student.save();
+                  return res.status(200).json({
+                        success: true,
+                        isSaved: true,
+                        message: "Job saved successfully"
+                  });
+            }
+      } catch (error) {
+            console.error("Error saving/unsaving job:", error);
+            return res.status(500).json({
+                  success: false,
+                  message: "Error saving/unsaving job"
+            });
+      }
+};
