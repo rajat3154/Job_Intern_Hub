@@ -3,31 +3,37 @@ import { useEffect } from "react";
 import axios from "axios";
 import { useDispatch } from "react-redux";
 import { setMessages } from "../../redux/messageSlice";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 
-const useGetMessages = (selectedUserId, authUserId) => {
+const useGetMessages = (selectedUserId) => {
   const dispatch = useDispatch();
 
   useEffect(() => {
     const fetchMessages = async () => {
-      // Only fetch if both users are selected
-      if (!selectedUserId || !authUserId) return;
+      if (!selectedUserId) return;
 
       try {
-        const res = await axios.get(`/api/v1/message/${selectedUserId}`, {
-          withCredentials: true,
-        });
-        dispatch(setMessages(res.data));
+        const res = await axios.get(
+          `http://localhost:8000/api/v1/message/${selectedUserId}`,
+          {
+            withCredentials: true,
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        if (res.data.success) {
+          dispatch(setMessages(res.data.messages));
+        }
       } catch (error) {
         console.error("Error fetching messages:", error);
-        toast.error(error.response?.data?.message || "Failed to load messages");
+        dispatch(setMessages([]));
       }
     };
 
     fetchMessages();
-  }, [selectedUserId, authUserId, dispatch]);
-
-  return {};
+  }, [selectedUserId, dispatch]);
 };
 
 export default useGetMessages;

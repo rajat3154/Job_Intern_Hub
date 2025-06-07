@@ -15,6 +15,8 @@ import { motion } from "framer-motion";
 import Navbar from "../shared/Navbar";
 import { io } from "socket.io-client";
 
+const API_BASE_URL = "http://localhost:8000";
+
 const ChatHome = () => {
   const { user } = useSelector((store) => store.auth);
   const navigate = useNavigate();
@@ -59,21 +61,17 @@ const Sidebar = ({ unreadCounts, setUnreadCounts }) => {
   const socket = useRef(null);
 
   const getLatestMessage = (userId) => {
-    console.log(
-      `[getLatestMessage] Getting latest message for userId: ${userId}`
-    );
-    const userMessages = messages.filter(
-      (msg) => msg.senderId === userId || msg.receiverId === userId
-    );
-    console.log(`[getLatestMessage] Found ${userMessages.length} messages`);
+    const userMessages = messages?.filter(
+      (msg) => 
+        (msg?.senderId?.toString() === userId?.toString() || 
+         msg?.receiverId?.toString() === userId?.toString())
+    ) || [];
+
     if (userMessages.length > 0) {
-      const latest = userMessages.sort(
+      return userMessages.sort(
         (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
       )[0];
-      console.log(`[getLatestMessage] Latest message:`, latest);
-      return latest;
     }
-    console.log("[getLatestMessage] No messages found");
     return null;
   };
 
@@ -84,40 +82,23 @@ const Sidebar = ({ unreadCounts, setUnreadCounts }) => {
     }
 
     console.log("[useEffect] Initializing socket connection...");
-    socket.current = io("http://localhost:8000", {
+    socket.current = io(API_BASE_URL, {
       query: { userId: authUser._id },
       withCredentials: true,
+      transports: ['websocket']
     });
 
     socket.current.on("connect", () => {
-      console.log("[Socket] Connected, emitting user:online");
-      socket.current.emit("user:online", authUser._id);
+      console.log("[Socket] Connected successfully");
     });
 
-    socket.current.on("disconnect", () => {
-      console.log("[Socket] Disconnected, emitting user:offline");
-      socket.current.emit("user:offline", authUser._id);
-    });
-
-    socket.current.on("user:status", ({ userId, isOnline }) => {
-      console.log(
-        `[Socket] user:status event received for userId ${userId}: isOnline=${isOnline}`
-      );
-      setUsers((prevUsers) =>
-        prevUsers.map((user) =>
-          user._id === userId ? { ...user, isOnline } : user
-        )
-      );
+    socket.current.on("message_received", (newMessage) => {
+      console.log("[Socket] New message received:", newMessage);
+      dispatch(setMessages((prev) => [...prev, newMessage]));
     });
 
     return () => {
-      if (socket.current) {
-        console.log(
-          "[useEffect Cleanup] Emitting user:offline and disconnecting socket"
-        );
-        socket.current.emit("user:offline", authUser._id);
-        socket.current.disconnect();
-      }
+      socket.current?.disconnect();
     };
   }, [authUser?._id]);
 
@@ -253,14 +234,20 @@ const Sidebar = ({ unreadCounts, setUnreadCounts }) => {
   };
 
   const selectUserHandler = (user) => {
-    console.log(
-      `[selectUserHandler] User selected: ${user.fullName} (${user._id})`
-    );
+    console.log(`[selectUserHandler] User selected:`, user);
     dispatch(setSelectedUser(user));
+    
+    // Reset unread count for selected user
     setUnreadCounts((prev) => ({
-      ...prev,
-      [user._id]: 0,
+          ...prev,
+          [user._id]: 0
     }));
+
+    // Emit socket event to mark messages as read
+    socket.current?.emit("mark_messages_read", {
+          senderId: user._id,
+          receiverId: authUser._id
+    });
   };
 
   return (
@@ -536,10 +523,9 @@ const MessageContainer = ({ unreadCounts, setUnreadCounts }) => {
       if (!selectedUser?._id || !authUser?._id) return;
 
       try {
-        setLoading(true);
-        setError(null);
+        setLoading(true);        setError(null);
         const response = await axios.get(
-          `http://localhost:8000/api/v1/messages/${selectedUser._id}`,
+          `http://localhost:8000/api/v1/message/${selectedUser._id}`,
           { withCredentials: true }
         );
 
@@ -570,9 +556,8 @@ const MessageContainer = ({ unreadCounts, setUnreadCounts }) => {
     e.preventDefault();
     if (!newMessage.trim() || !selectedUser?._id || !authUser?._id) return;
 
-    try {
-      const response = await axios.post(
-        `http://localhost:8000/api/v1/messages/send/${selectedUser._id}`,
+    try {      const response = await axios.post(
+        `http://localhost:8000/api/v1/message/send/${selectedUser._id}`,
         { message: newMessage.trim() },
         { withCredentials: true }
       );

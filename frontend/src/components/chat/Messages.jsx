@@ -1,35 +1,44 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import Message from "./Message";
 import useGetMessages from "../hooks/useGetMessages";
 import { useSelector, useDispatch } from "react-redux";
 import useGetRealTimeMessage from "../hooks/useGetRealTimeMessage";
-import { setSelectedUser } from "../../redux/userSlice";
 
 const Messages = () => {
   const dispatch = useDispatch();
   const { messages } = useSelector((store) => store.message);
-  const { authUser } = useSelector((store) => store.user);
+  const { selectedUser } = useSelector((store) => store.auth);
+  const messagesEndRef = useRef(null);
 
-  useEffect(() => {
-    // Get selected user from localStorage
-    const selectedUser = JSON.parse(localStorage.getItem('selectedUser'));
-    if (selectedUser) {
-      dispatch(setSelectedUser(selectedUser));
-      // Clear localStorage after setting the user
-      localStorage.removeItem('selectedUser');
-    }
-  }, [dispatch]);
-
-  // Pass the selected user ID to useGetMessages
-  useGetMessages(authUser?._id);
+  useGetMessages(selectedUser?._id);
   useGetRealTimeMessage();
 
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  if (!selectedUser) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <p className="text-gray-500">Select a conversation to start messaging</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="px-4 flex-1 overflow-auto">
-      {messages &&
-        messages?.map((message) => {
-          return <Message key={message._id} message={message} />;
-        })}
+    <div className="flex-1 overflow-y-auto p-4">
+      <div className="space-y-4">
+        {Array.isArray(messages) && messages.length > 0 ? (
+          messages.map((message) => (
+            <Message key={message._id} message={message} />
+          ))
+        ) : (
+          <div className="flex items-center justify-center h-full">
+            <p className="text-gray-500">No messages yet. Start a conversation!</p>
+          </div>
+        )}
+        <div ref={messagesEndRef} />
+      </div>
     </div>
   );
 };

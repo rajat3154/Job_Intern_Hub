@@ -6,6 +6,8 @@ import axios from "axios";
 import { setMessages } from "../../redux/messageSlice";
 import { io } from "socket.io-client";
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+
 const MessageContainer = () => {
       const { selectedUser } = useSelector((state) => state.auth);
       const { user: authUser } = useSelector((state) => state.auth);
@@ -19,9 +21,7 @@ const MessageContainer = () => {
 
       // Initialize socket connection
       useEffect(() => {
-            if (!authUser?._id) return;
-
-            const newSocket = io("http://localhost:8000", {
+            if (!authUser?._id) return;            const newSocket = io(API_BASE_URL, {
                   query: {
                         userId: authUser._id
                   },
@@ -77,24 +77,23 @@ const MessageContainer = () => {
                         setLoading(true);
                         setError(null);
                         const response = await axios.get(
-                              `http://localhost:8000/api/v1/messages/${selectedUser._id}`,
+                              `${API_BASE_URL}/api/v1/message/${selectedUser._id}`,
                               { withCredentials: true }
                         );
-                        
+
                         if (response.data.success) {
-                              const messagesData = Array.isArray(response.data.messages) ? response.data.messages : [];
-                              dispatch(setMessages(messagesData));
+                              const sortedMessages = response.data.messages.sort(
+                                    (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
+                              );
+                              dispatch(setMessages(sortedMessages));
                               setConversations(prev => ({
                                     ...prev,
-                                    [selectedUser._id]: messagesData
+                                    [selectedUser._id]: sortedMessages
                               }));
-                        } else {
-                              throw new Error(response.data.error || "Failed to fetch messages");
                         }
                   } catch (error) {
                         console.error("Error fetching messages:", error);
-                        setError(error.response?.data?.error || "Failed to load messages. Please try again.");
-                        dispatch(setMessages([]));
+                        setError("Failed to load messages");
                   } finally {
                         setLoading(false);
                   }
@@ -113,32 +112,26 @@ const MessageContainer = () => {
             if (!newMessage.trim() || !selectedUser?._id || !authUser?._id) return;
 
             try {
-                  setError(null);
                   const response = await axios.post(
-                        `http://localhost:8000/api/v1/messages/send/${selectedUser._id}`,
+                        `${API_BASE_URL}/api/v1/message/send/${selectedUser._id}`,
                         { message: newMessage.trim() },
                         { withCredentials: true }
                   );
 
-                  if (response.data.success && response.data.newMessage) {
-                        const currentMessages = conversations[selectedUser._id] || [];
-                        const updatedMessages = [...currentMessages, response.data.newMessage];
-                        
-                        // Update conversations state
-                        setConversations(prev => ({
-                              ...prev,
-                              [selectedUser._id]: updatedMessages
-                        }));
-                        
-                        // Update Redux store
+                  if (response.data.success) {
+                        const updatedMessages = [...messages, response.data.newMessage];
                         dispatch(setMessages(updatedMessages));
                         setNewMessage("");
-                  } else {
-                        throw new Error(response.data.error || "Failed to send message");
+                        
+                        // Emit socket event for real-time
+                        socket?.emit("new_message", {
+                              to: selectedUser._id,
+                              message: response.data.newMessage
+                        });
                   }
             } catch (error) {
                   console.error("Error sending message:", error);
-                  setError(error.response?.data?.error || "Failed to send message. Please try again.");
+                  toast.error("Failed to send message");
             }
       };
 

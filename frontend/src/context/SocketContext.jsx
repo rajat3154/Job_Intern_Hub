@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { io } from "socket.io-client";
-import { toast } from "react-hot-toast";
-import { useAuth } from "./AuthContext"; // Your custom auth hook/context
+import { useSelector } from "react-redux";
 
 // Create a context for socket
 const SocketContext = createContext(null);
@@ -17,71 +16,40 @@ export const useSocket = () => {
 
 // SocketProvider component to wrap your app
 export const SocketProvider = ({ children }) => {
-  const { user, token } = useAuth(); // Get user and token from your auth context
   const [socket, setSocket] = useState(null);
+  const { user } = useSelector((state) => state.auth);
 
   useEffect(() => {
-    // Attempt to get token from localStorage if not available from context
-    const authToken = token || localStorage.getItem("token");
+    if (!user?._id) return;
 
-    console.log("Initializing socket connection...");
-
-    // Connect socket.io client with or without token as auth
     const newSocket = io("http://localhost:8000", {
-      auth: authToken ? { token: authToken } : undefined,
+      autoConnect: true,
       withCredentials: true,
-      reconnection: true,
-      reconnectionAttempts: 5,
+      transports: ["polling", "websocket"],
+      path: "/socket.io/",
       reconnectionDelay: 1000,
-      transports: ["websocket", "polling"],
+      reconnection: true,
+      reconnectionAttempts: 10,
+      agent: false,
+      upgrade: true,
+      rejectUnauthorized: false,
     });
 
-    // Socket connected event
+    newSocket.on("connect_error", (err) => {
+      console.log("Socket connection error:", err);
+    });
+
     newSocket.on("connect", () => {
-      console.log("Socket connected:", newSocket.id);
-      if (!authToken) {
-        console.warn("Socket connected without authentication token");
-        toast("Connected to notifications without authentication", { icon: "⚠️" });
-      } else {
-        toast.success("Connected to real-time notifications");
-      }
-    });
-
-    // Connection error handling
-    newSocket.on("connect_error", (error) => {
-      console.error("Socket connection error:", error.message);
-      toast.error("Failed to connect to notifications");
-    });
-
-    // General socket errors
-    newSocket.on("error", (error) => {
-      console.error("Socket error:", error.message);
-    });
-
-    // Handle disconnection and try manual reconnect if server disconnects
-    newSocket.on("disconnect", (reason) => {
-      console.log("Socket disconnected:", reason);
-      if (reason === "io server disconnect") {
-        newSocket.connect(); // manual reconnect
-      }
-    });
-
-    // Example: Handle receiving a new notification
-    newSocket.on("newNotification", (notification) => {
-      console.log("Received new notification:", notification);
-      toast.success("New notification received!");
-      // You can also dispatch to Redux or update local state here
+      console.log("Socket Connected");
+      newSocket.emit("setup", user);
     });
 
     setSocket(newSocket);
 
-    // Cleanup on unmount or when user/token changes
     return () => {
-      console.log("Cleaning up socket...");
-      newSocket.disconnect();
-      setSocket(null);
+      if (newSocket) newSocket.disconnect();
     };
-  }, [user, token]);
+  }, [user]);
 
   return (
     <SocketContext.Provider value={socket}>{children}</SocketContext.Provider>

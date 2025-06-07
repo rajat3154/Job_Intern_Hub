@@ -1,42 +1,28 @@
-import React, { useEffect, useRef } from "react";
+import React from "react";
 import { useSelector } from "react-redux";
+import { format } from "date-fns";
 
 const Message = ({ message }) => {
-  const scroll = useRef();
-  const { authUser, selectedUser } = useSelector((store) => store.user);
-
-  useEffect(() => {
-    scroll.current?.scrollIntoView({ behavior: "smooth" });
-  }, [message]);
+  const { user: authUser } = useSelector((store) => store.auth);
+  const isOwnMessage = message.senderId === authUser._id;
 
   return (
     <div
-      ref={scroll}
-      className={`chat ${
-        message?.senderId === authUser?._id ? "chat-end" : "chat-start"
-      }`}
+      className={`flex ${
+        isOwnMessage ? "justify-end" : "justify-start"
+      } mb-4`}
     >
-      <div className="chat-image avatar">
-        <div className="w-10 rounded-full">
-          <img
-            alt="Tailwind CSS chat bubble component"
-            src={
-              message?.senderId === authUser?._id
-                ? authUser?.profilePhoto
-                : selectedUser?.profilePhoto
-            }
-          />
-        </div>
-      </div>
-      <div className="chat-header">
-        <time className="text-xs opacity-50 text-white">12:45</time>
-      </div>
       <div
-        className={`chat-bubble ${
-          message?.senderId !== authUser?._id ? "bg-gray-200 text-black" : ""
-        } `}
+        className={`max-w-[70%] rounded-lg px-4 py-2 ${
+          isOwnMessage
+            ? "bg-blue-600 text-white rounded-tr-none"
+            : "bg-gray-700 text-white rounded-tl-none"
+        }`}
       >
-        {message?.message}
+        <p className="text-sm">{message.message}</p>
+        <p className="text-xs text-gray-300 mt-1">
+          {format(new Date(message.createdAt), "HH:mm")}
+        </p>
       </div>
     </div>
   );

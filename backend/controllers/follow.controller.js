@@ -6,15 +6,14 @@ import { Notification } from "../models/Notification.js";
 import { io } from "../socket/socket.js";
 
 export const followUser = async (req, res) => {
-    try {
-        const { followingId, followerType, followingType } = req.body;
+    try {        const { followingId, followingType } = req.body;
         const followerId = req.user._id; // Use authenticated user's ID instead of request body
+        const followerType = req.user.role === 'student' ? 'Student' : 'Recruiter';
         
         console.log('Authenticated user:', req.user);
         console.log('Request body:', req.body);
-        
-        // Get logged-in user details
-        const loggedInUser = await (followerType === 'Student' ? Student : Recruiter).findById(followerId);
+          // Get logged-in user details based on their role
+        const loggedInUser = await (req.user.role === 'student' ? Student : Recruiter).findById(followerId);
         if (!loggedInUser) {
             throw new ApiError(404, "Logged in user not found");
         }
@@ -25,16 +24,14 @@ export const followUser = async (req, res) => {
             followingId, 
             followerType, 
             followingType,
-            loggedInUserName: followerType === 'Student' ? loggedInUser.fullname : loggedInUser.companyname 
+            loggedInUserName: req.user.role === 'student' ? loggedInUser.fullname : loggedInUser.companyname 
         });
 
         // Validate input
         if (!followerId || !followingId || !followerType || !followingType) {
             throw new ApiError(400, "All fields are required");
-        }
-
-        // Get follower and following models based on types
-        const FollowerModel = followerType === 'Student' ? Student : Recruiter;
+        }        // Get follower and following models based on types
+        const FollowerModel = req.user.role === 'student' ? Student : Recruiter;
         const FollowingModel = followingType === 'Student' ? Student : Recruiter;
 
         // Get user to follow
@@ -63,14 +60,12 @@ export const followUser = async (req, res) => {
                     followersType: followerType
                 }
             }
-        );
-
-        // Create notification using logged-in user's name
-        const loggedInUserName = followerType === 'Student' ? loggedInUser.fullname : loggedInUser.companyname;
+        );        // Create notification using logged-in user's name
+        const loggedInUserName = req.user.role === 'student' ? loggedInUser.fullname : loggedInUser.companyname;
         const notification = await Notification.create({
             recipient: followingId,
             sender: followerId,
-            senderModel: followerType,
+            senderModel: followerType,  // Using corrected followerType from earlier
             type: 'follow',
             title: 'New Follower',
             message: `${loggedInUserName} started following you`,

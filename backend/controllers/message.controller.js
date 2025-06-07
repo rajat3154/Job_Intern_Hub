@@ -4,21 +4,14 @@ import { getReceiverSocketId, io } from "../socket/socket.js";
 
 export const sendMessage = async (req, res) => {
       try {
-            const senderId = req.user.id;
-            const receiverId = req.params.id;
             const { message } = req.body;
+            const senderId = req.user._id;
+            const receiverId = req.params.id;
 
-            if (!senderId || !receiverId || !message) {
+            if (!message || !senderId || !receiverId) {
                   return res.status(400).json({
                         success: false,
-                        error: "Missing sender, receiver, or message",
-                  });
-            }
-
-            if (senderId.toString() === receiverId.toString()) {
-                  return res.status(400).json({
-                        success: false,
-                        error: "Cannot send message to yourself",
+                        error: "Message content and both users are required",
                   });
             }
 
@@ -57,57 +50,54 @@ export const sendMessage = async (req, res) => {
                   newMessage,
             });
       } catch (error) {
-            console.error("sendMessage error:", error);
+            console.error("Error in sendMessage:", error);
             return res.status(500).json({
                   success: false,
-                  error: "Internal server error",
-                  details: error.message,
+                  error: "Failed to send message",
             });
       }
 };
 
 export const getMessage = async (req, res) => {
       try {
-            const senderId = req.user.id;
+            const senderId = req.user._id;
             const receiverId = req.params.id;
 
             if (!senderId || !receiverId) {
                   return res.status(400).json({
                         success: false,
-                        error: "Sender or Receiver ID missing",
+                        error: "Missing sender or receiver ID",
                   });
             }
 
-            // Sort participants for consistent querying
-            const participants = [senderId, receiverId].sort((a, b) =>
-                  a.toString().localeCompare(b.toString())
+            const messages = await Message.find({
+                  $or: [
+                        { senderId, receiverId },
+                        { senderId: receiverId, receiverId: senderId },
+                  ],
+            })
+                  .sort({ createdAt: 1 })
+                  .lean();
+
+            // Mark messages as read
+            await Message.updateMany(
+                  {
+                        senderId: receiverId,
+                        receiverId: senderId,
+                        read: false,
+                  },
+                  { $set: { read: true } }
             );
 
-            const page = parseInt(req.query.page) || 1;
-            const limit = parseInt(req.query.limit) || 20;
-            const skip = (page - 1) * limit;
-
-            // Fetch conversation and populate messages with pagination and sorting
-            const conversation = await Conversation.findOne({ participants }).populate({
-                  path: "messages",
-                  options: {
-                        sort: { createdAt: -1 },
-                        limit,
-                        skip,
-                  },
+            return res.status(200).json({
+                  success: true,
+                  messages,
             });
-
-            if (!conversation) {
-                  return res.status(200).json({ success: true, messages: [] });
-            }
-
-            return res.status(200).json({ success: true, messages: conversation.messages });
       } catch (error) {
             console.error("getMessage error:", error);
             return res.status(500).json({
                   success: false,
-                  error: "Internal server error",
-                  details: error.message,
+                  error: "Failed to fetch messages",
             });
       }
 };

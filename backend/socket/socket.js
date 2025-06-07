@@ -5,77 +5,63 @@ import express from "express";
 const app = express();
 const server = http.createServer(app);
 
-const io = new Server(server, {
-      cors: {
-            origin: ["http://localhost:5173"],
-            methods: ["GET", "POST"],
-            credentials: true
-      }
-});
+let io;
+const userSockets = new Map();
 
-// Make socket maps globally available
-global.userSocketMap = {}; // { userId: socketId }
-global.onlineUsers = new Set(); // Track online users
-global.io = io; // Make io instance globally available
-
-// Get receiver's socketId for private messaging
-export const getReceiverSocketId = (receiverId) => {
-      return userSocketMap[receiverId];
-};
-
-// Socket connection logic
-io.on("connection", (socket) => {
-      const userId = socket.handshake.query.userId;
-
-      if (userId) {
-            userSocketMap[userId] = socket.id;
-            onlineUsers.add(userId);
-            console.log(`User connected: ${userId} => ${socket.id}`);
-
-            // Notify all clients of user coming online
-            io.emit("user:status", { userId, isOnline: true });
-      }
-
-      // Handle user online status
-      socket.on("user:online", (userId) => {
-            onlineUsers.add(userId);
-            io.emit("user:status", { userId, isOnline: true });
+export const initSocket = (server) => {
+      io = new Server(server, {
+            cors: {
+                  origin: process.env.FRONTEND_URL || "http://localhost:5173",
+                  methods: ["GET", "POST"],
+                  credentials: true,
+                  allowedHeaders: ["Content-Type"]
+            },
+            transports: ['websocket', 'polling'],
+            path: '/socket.io/',
+            pingTimeout: 60000
       });
 
-      // Handle user offline status
-      socket.on("user:offline", (userId) => {
-            onlineUsers.delete(userId);
-            io.emit("user:status", { userId, isOnline: false });
-      });
+      io.on("connection", (socket) => {
+            console.log("New client connected:", socket.id);
 
-      // Handle get online status request
-      socket.on("get:onlineStatus", (userIds) => {
-            userIds.forEach(userId => {
-                  socket.emit("user:status", {
-                        userId,
-                        isOnline: onlineUsers.has(userId)
-                  });
+            socket.on("setup", (userId) => {
+                  socket.userId = userId;
+                  socket.join(userId);
+                  userSockets.set(userId, socket.id);
+                  socket.emit("connected");
+                  io.emit("user:status", { userId, isOnline: true });
+            });
+
+            socket.on("disconnect", () => {
+                  if (socket.userId) {
+                        userSockets.delete(socket.userId);
+                        io.emit("user:status", { userId: socket.userId, isOnline: false });
+                  }
+            });
+
+            socket.on("join_chat", (chatId) => {
+                  socket.join(chatId);
+                  console.log("User joined chat:", chatId);
+            });
+
+            socket.on("new_message", (message) => {
+                  const receiverSocket = userSockets.get(message.receiverId);
+                  if (receiverSocket) {
+                        io.to(receiverSocket).emit("message_received", message);
+                  }
             });
       });
 
-      // Handle new messages
-      socket.on("message:new", (message) => {
-            const receiverId = message.receiverId;
-            const receiverSocketId = getReceiverSocketId(receiverId);
+      return io;
+};
 
-            if (receiverSocketId) {
-                  io.to(receiverSocketId).emit("message:new", message);
-            }
-      });
+export const getIO = () => {
+      if (!io) throw new Error("Socket.io not initialized");
+      return io;
+};
 
-      socket.on("disconnect", () => {
-            if (userId) {
-                  delete userSocketMap[userId];
-                  onlineUsers.delete(userId);
-                  console.log(`User disconnected: ${userId}`);
-                  io.emit("user:status", { userId, isOnline: false });
-            }
-      });
-});
+export const getReceiverSocketId = (receiverId) => {
+      return userSockets.get(receiverId);
+};
 
 export { app, io, server };

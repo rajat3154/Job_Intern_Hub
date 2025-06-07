@@ -65,6 +65,14 @@ const Navbar = () => {
                     Internships
                   </Link>
                 </li>
+                <li>
+                  <Link
+                    to="/notifications"
+                    className="hover:text-white transition duration-300 cursor-pointer"
+                  >
+                    Notifications
+                  </Link>
+                </li>
               </>
             )}
             {user?.role === "student" && (
@@ -99,6 +107,14 @@ const Navbar = () => {
                     className="hover:text-white transition duration-300 cursor-pointer"
                   >
                     Messages
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/notifications"
+                    className="hover:text-white transition duration-300 cursor-pointer"
+                  >
+                    Notifications
                   </Link>
                 </li>
               </>

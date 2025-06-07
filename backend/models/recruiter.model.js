@@ -28,14 +28,29 @@ const recruiterSchema = new mongoose.Schema(
             password: {
                   type: String,
                   required: true
-            },
-            profile: {
+            },            profile: {
                   profilePhoto: {
                         type: String,
                         default: ""
-                  }
+                  },
+                  bio: { type: String },
             },
-
+            following: [{
+                  type: mongoose.Schema.Types.ObjectId,
+                  refPath: 'followingType'
+            }],
+            followingType: [{
+                  type: String,
+                  enum: ['Student', 'Recruiter']
+            }],
+            followers: [{
+                  type: mongoose.Schema.Types.ObjectId,
+                  refPath: 'followersType'
+            }],
+            followersType: [{
+                  type: String,
+                  enum: ['Student', 'Recruiter']
+            }],
       },
       {
             timestamps: true,

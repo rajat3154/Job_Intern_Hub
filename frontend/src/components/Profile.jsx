@@ -68,12 +68,17 @@ const Profile = () => {
     const fetchUserProfile = async () => {
       try {
         setLoading(true);
-        const endpoint =
-          userId && userType
-            ? `http://localhost:8000/api/v1/${userType.toLowerCase()}/${userId}`
-            : `http://localhost:8000/api/v1/${currentUser.role.toLowerCase()}/${
-                currentUser._id
-              }`;
+        let endpoint;
+        
+        if (userId && userType) {
+          endpoint = `http://localhost:8000/api/v1/${userType.toLowerCase()}/${userId}`;
+        } else if (currentUser?._id) {
+          endpoint = `http://localhost:8000/api/v1/${currentUser.role.toLowerCase()}/${currentUser._id}`;
+        } else {
+          toast.error("No user ID available");
+          setLoading(false);
+          return;
+        }
 
         const response = await axios.get(endpoint, {
           headers: {
@@ -90,8 +95,10 @@ const Profile = () => {
       }
     };
 
-    fetchUserProfile();
-  }, [userId, userType, currentUser]);
+    if (userId || currentUser?._id) {
+      fetchUserProfile();
+    }
+  }, [userId, userType, currentUser?._id, navigate]);
 
   useEffect(() => {
     const fetchFollowData = async () => {
@@ -203,6 +210,13 @@ const Profile = () => {
     });
   };
 
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!loading && !currentUser?._id && !userId) {
+      navigate("/login");
+    }
+  }, [loading, currentUser, userId, navigate]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-black">
@@ -214,7 +228,7 @@ const Profile = () => {
     );
   }
 
-  const isOwnProfile = !userId || (currentUser && currentUser._id === userId);
+  const isOwnProfile = !userId || (currentUser?._id === userId);
   const isStudent = profileUser?.role?.toUpperCase() === "STUDENT";
 
   return (

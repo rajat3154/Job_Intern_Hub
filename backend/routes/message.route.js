@@ -4,10 +4,10 @@ import isAuthenticated from "../middlewares/isAuthenticated.js";
 
 const router = express.Router();
 
-// Send a message
-router.route("/send/:id").post(isAuthenticated, sendMessage);
+// Get messages between two users
+router.route("/:id").get(isAuthenticated, getMessage);
 
-// Get messages (paginated)
-router.route("/:id").get(isAuthenticated, getMessage); // Add ?page=1&limit=20 in client
+// Send a message to a user
+router.route("/send/:id").post(isAuthenticated, sendMessage);
 
 export default router;
