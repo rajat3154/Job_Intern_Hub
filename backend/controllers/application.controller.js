@@ -114,22 +114,65 @@ export const updateStatus = async (req, res) => {
       try {
             const { status } = req.body;
             const applicationId = req.params.id;
+            
             if (!status) {
                   return res
                         .status(400)
                         .json({ message: "Status is required", success: false });
             }
-            const application = await Application.findById(applicationId);
+
+            const application = await Application.findById(applicationId)
+                  .populate({
+                        path: 'job',
+                        populate: {
+                              path: 'created_by',
+                              select: 'companyname'
+                        }
+                  })
+                  .populate('applicant');
+
             if (!application) {
                   return res
                         .status(404)
                         .json({ message: "Application not found", success: false });
             }
+
             application.status = status.toLowerCase();
             await application.save();
+
+            // Create notification
+            const notification = await Notification.create({
+                  recipient: application.applicant._id,
+                  sender: application.job.created_by._id,
+                  senderModel: 'Recruiter',
+                  type: 'application',
+                  title: 'Application Status Updated',
+                  message: `Your application for "${application.job.title}" has been ${status.toLowerCase()} by ${application.job.created_by.companyname}`,
+                  read: false
+            });
+
+            // Get socket instance and emit notification if available
+            const io = getIO();
+            if (io) {
+                  const populatedNotification = {
+                        ...notification.toObject(),
+                        sender: {
+                              _id: application.job.created_by._id,
+                              companyname: application.job.created_by.companyname
+                        }
+                  };
+                  io.to(application.applicant._id.toString()).emit('newNotification', populatedNotification);
+            } else {
+                  console.log('Socket.IO not available for real-time notification');
+            }
+
             return res
                   .status(200)
-                  .json({ message: "Status *updated successfully", success: true });
+                  .json({ 
+                        message: "Status updated successfully", 
+                        success: true,
+                        notification 
+                  });
       } catch (error) {
             console.log(error);
             return res.status(500).json({ message: "Server error", success: false });
