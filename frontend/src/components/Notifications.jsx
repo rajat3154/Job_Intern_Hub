@@ -15,6 +15,7 @@ import axios from "axios";
 import { useSocket } from "../context/SocketContext";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
+import { Avatar, AvatarImage, AvatarFallback } from "./ui/avatar";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
@@ -191,14 +192,26 @@ const Notifications = () => {
               >
                 <div className="flex items-start gap-4">
                   <div className="flex-shrink-0">
-                    {getNotificationIcon(notification.type)}
+                    <Avatar className="w-10 h-10 border border-gray-800">
+                      <AvatarImage
+                        src={notification.sender?.profile?.profilePhoto}
+                        alt={getSenderName(notification)}
+                      />
+                      <AvatarFallback className="bg-gray-900 text-gray-400">
+                        {getSenderName(notification)
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")
+                          .toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
                   </div>
                   <div className="flex-grow">
                     <h3 className="font-semibold text-gray-100">
                       {notification.title}
                     </h3>
                     <p className="text-gray-400 mt-1">
-                      {getSenderName(notification)} started following you
+                      {notification.message}
                     </p>
                     <div className="mt-2 text-sm text-gray-500">
                       {new Date(notification.createdAt).toLocaleDateString(
