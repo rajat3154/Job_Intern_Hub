@@ -1,84 +1,89 @@
 import React from "react";
-import { Button } from "./ui/button";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
+import { Button } from "./ui/button";
 
 const LatestJobCards = ({ job }) => {
-  const { user } = useSelector((store) => store.auth);
   const navigate = useNavigate();
+  const { user } = useSelector((store) => store.auth);
+
+  const handleCardClick = (e) => {
+    e.preventDefault();
+    if (!user) {
+      navigate('/signup');
+      return;
+    }
+    navigate(`/job/description/${job._id}`);
+  };
+
+  const handleButtonClick = (e) => {
+    e.stopPropagation();
+    if (!user) {
+      navigate('/signup');
+      return;
+    }
+    navigate(`/job/description/${job._id}`);
+  };
 
   return (
-    <div className="relative p-6 rounded-lg shadow-lg bg-black text-white border border-blue-500 hover:bg-gray-800 transition duration-300 overflow-hidden w-[455px] h-[280px] flex flex-col">
-      {/* Top Section */}
-      <div className="flex justify-between items-start mb-4">
-        {/* Date */}
-        <p className="text-sm text-gray-400">
-          {new Date(job.createdAt).toDateString()}
-        </p>
-
-        {/* Buttons Container */}
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-white bg-purple-800 border-purple-800 hover:bg-purple-900 transition-all duration-300 px-4 py-2 rounded-md shadow-lg hover:shadow-purple-400"
-            onClick={() => {
-              if (user?.role === "student") {
-                navigate(`/job/description/${job._id}`);
-              } else if (user?.role === "recruiter") {
-                navigate(`/job/details/${job._id}`);
-              }
-            }}
-          >
-            Details
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-white bg-green-500 border-green-500 hover:bg-green-600 transition-all duration-300 px-4 py-2 rounded-md shadow-lg hover:shadow-green-400"
-          >
-            Apply Now
-          </Button>
-        </div>
+    <div
+      onClick={handleCardClick}
+      className="w-full p-6 rounded-lg shadow-lg bg-black text-white border border-blue-500 hover:bg-gray-800 cursor-pointer transition duration-300 flex flex-col h-full relative"
+    >
+      {/* Action Buttons in Top Right */}
+      <div className="absolute top-3 right-4 flex gap-2">
+        <Button
+          onClick={handleButtonClick}
+          variant="outline"
+          className="px-3 py-1 bg-purple-500 border-purple-500 text-white text-sm font-bold rounded-md hover:bg-purple-600 cursor-pointer"
+        >
+          View Details
+        </Button>
+        <Button
+          onClick={handleButtonClick}
+          className="px-3 py-1 bg-green-500 border-green-500 text-white text-sm font-bold rounded-md hover:bg-green-600 cursor-pointer"
+        >
+          Apply Now
+        </Button>
       </div>
 
-      {/* Company Info */}
-      <div className="flex gap-3 mb-4 items-center">
-        <img
-          src={job.company?.logo || "https://via.placeholder.com/50"}
-          alt={`${job.company?.name || "Company"} Logo`}
-          className="w-12 h-12 rounded-full object-cover"
-        />
-        <div>
-          <h1 className="font-semibold text-lg">
-            {job.company?.name || "Company"}
-          </h1>
-          <p className="text-sm text-gray-400">{job.location}</p>
-        </div>
-      </div>
-
-      {/* Job Info */}
-      <div className="flex-1 flex flex-col">
-        <div className="mb-3">
-          <h1 className="font-bold text-xl mb-2">{job.title}</h1>
-          {job.description && (
-            <p className="text-sm text-gray-300 line-clamp-3">
-              {job.description}
-            </p>
-          )}
+      {/* Rest of the card content with adjusted top padding */}
+      <div className="mt-12">
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-sm text-gray-400">
+            {new Date(job.createdAt).toDateString()}
+          </p>
         </div>
 
-        {/* Job Tags */}
-        <div className="mt-auto flex flex-wrap gap-2">
-          <span className="px-2 py-1 bg-blue-400 text-black text-sm font-bold rounded-md">
-            {job.position} Positions
-          </span>
-          <span className="px-2 py-1 bg-red-600 text-white text-sm font-bold rounded-md">
-            {job.jobType}
-          </span>
-          <span className="px-2 py-1 bg-yellow-400 text-black text-sm font-bold rounded-md">
-            {job.salary} LPA
-          </span>
+        <div className="flex items-center gap-3 mb-6">
+          <img
+            src={job.created_by?.profile?.profilePhoto || "https://via.placeholder.com/50"}
+            alt="Company Logo"
+            className="w-12 h-12 rounded-full"
+          />
+          <div>
+            <h1 className="font-semibold text-lg">{job.company || "Company"}</h1>
+            <p className="text-sm text-gray-400">{job.location}</p>
+          </div>
+        </div>
+
+        <div className="mb-4 flex-grow">
+          <h1 className="font-bold text-xl mb-3">{job.title}</h1>
+          <p className="text-sm text-gray-300 line-clamp-3">{job.description}</p>
+        </div>
+
+        <div className="mt-auto space-y-4">
+          <div className="flex flex-wrap gap-2">
+            <span className="px-2 py-1 bg-blue-400 text-black text-sm font-bold rounded-md">
+              {job.position} Positions
+            </span>
+            <span className="px-2 py-1 bg-red-600 text-white text-sm font-bold rounded-md">
+              {job.jobType}
+            </span>
+            <span className="px-2 py-1 bg-yellow-400 text-black text-sm font-bold rounded-md">
+              {job.salary} LPA
+            </span>
+          </div>
         </div>
       </div>
     </div>

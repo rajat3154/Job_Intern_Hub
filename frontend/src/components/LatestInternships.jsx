@@ -1,73 +1,57 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { useDispatch } from "react-redux";
 import LatestInternshipCards from "./LatestInternshipCards";
-import profilePic from "./assets/a.jpg";
+import { setAllInternships } from "../redux/internshipSlice";
 
 const LatestInternships = ({ query }) => {
-  const staticInternships = [
-    {
-      id: 1,
-      title: "Frontend Developer Intern",
-      description: "Build dynamic user interfaces using React and Tailwind.",
-      location: "Bangalore, India",
-      company: { name: "Infosys", logo: profilePic },
-      createdAt: "2024-03-12T12:00:00Z",
-      duration: "6 Months",
-      stipend: "₹15,000/month",
-      skills: ["React", "Tailwind", "JavaScript"],
-      type: "Remote",
-    },
-    {
-      id: 2,
-      title: "Marketing Intern",
-      description: "Assist in social media campaigns and digital strategies.",
-      location: "Mumbai, India",
-      company: { name: "Flipkart", logo: profilePic },
-      createdAt: "2024-03-09T12:00:00Z",
-      duration: "3 Months",
-      stipend: "₹10,000/month",
-      skills: ["SEO", "Content Writing", "Social Media"],
-      type: "In-office",
-    },
-    {
-      id: 3,
-      title: "Data Science Intern",
-      description: "Analyze datasets and develop predictive models.",
-      location: "Hyderabad, India",
-      company: { name: "TCS", logo: profilePic },
-      createdAt: "2024-03-07T12:00:00Z",
-      duration: "4 Months",
-      stipend: "₹18,000/month",
-      skills: ["Python", "Machine Learning", "SQL"],
-      type: "Remote",
-    },
-    {
-      id: 4,
-      title: "Backend Developer Intern",
-      description: "Work on API development using Node.js and Express.",
-      location: "Delhi, India",
-      company: { name: "Amazon", logo: profilePic },
-      createdAt: "2024-03-06T12:00:00Z",
-      duration: "5 Months",
-      stipend: "₹20,000/month",
-      skills: ["Node.js", "Express", "MongoDB"],
-      type: "Hybrid",
-    },
-    {
-      id: 5,
-      title: "UI/UX Design Intern",
-      description: "Create intuitive designs and wireframes using Figma.",
-      location: "Pune, India",
-      company: { name: "Microsoft", logo: profilePic },
-      createdAt: "2024-03-05T12:00:00Z",
-      duration: "3 Months",
-      stipend: "₹12,000/month",
-      skills: ["Figma", "Adobe XD", "User Research"],
-      type: "Remote",
-    },
-  ];
+  const dispatch = useDispatch();
+  const [latestInternships, setLatestInternships] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const filteredInternships = staticInternships.filter((internship) => {
+  const fetchLatestInternships = async () => {
+    try {
+      console.log("Fetching internships for latest view...");
+      setLoading(true);
+      setError(null);
+      const response = await fetch(
+        "http://localhost:8000/api/v1/internship/get",
+        {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+        }
+      );
+
+      const data = await response.json();
+      console.log("API Response for latest internships:", data);
+
+      if (data.success && Array.isArray(data.internships)) {
+        console.log("Processing internships data...");
+        const latest = data.internships
+          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+          .slice(0, 5);
+        console.log("Latest 5 internships:", latest);
+        setLatestInternships(latest);
+        dispatch(setAllInternships(data.internships));
+      } else {
+        console.warn("Invalid response format:", data);
+        throw new Error("Invalid response format");
+      }
+    } catch (error) {
+      console.error("Error in fetchLatestInternships:", error);
+      setError("Failed to load internships");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLatestInternships();
+  }, []);
+
+  const filteredInternships = latestInternships.filter((internship) => {
     const q = query.toLowerCase().trim();
 
     const combinedValues = [
@@ -96,31 +80,45 @@ const LatestInternships = ({ query }) => {
         </h1>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredInternships.map((internship) => (
-            <LatestInternshipCards
-              key={internship.id}
-              internship={internship}
-            />
-          ))}
-
-          <Link
-            to="/internships"
-            className="p-6 rounded-lg shadow-lg bg-black text-white border border-blue-500 hover:bg-gray-800 cursor-pointer transition duration-300 overflow-hidden flex flex-col items-center justify-center text-center w-full"
-            style={{ minHeight: "270px" }}
-          >
-            <h2 className="text-2xl font-bold text-blue-400">
-              View More Internships
-            </h2>
-            <p className="mt-2 text-gray-300 text-lg">
-              Explore all Internships
-            </p>
-
-            <div className="mt-6 flex justify-center">
-              <button className="w-12 h-12 flex items-center justify-center rounded-full border border-blue-500 text-blue-400 text-2xl cursor-pointer hover:text-white transition duration-300">
-                ➡️
-              </button>
+          {loading ? (
+            <div className="col-span-3 text-center text-gray-400">
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
+              Loading internships...
             </div>
-          </Link>
+          ) : error ? (
+            <div className="col-span-3 text-center text-red-400">{error}</div>
+          ) : latestInternships.length > 0 ? (
+            <>
+              {latestInternships.map((internship) => (
+                <LatestInternshipCards
+                  key={internship._id}
+                  internship={internship}
+                />
+              ))}
+              <Link
+                to="/internships"
+                className="p-6 rounded-lg shadow-lg bg-black text-white border border-blue-500 hover:bg-gray-800 cursor-pointer transition duration-300 overflow-hidden flex flex-col items-center justify-center text-center w-full"
+                style={{ minHeight: "270px" }}
+              >
+                <h2 className="text-2xl font-bold text-blue-400">
+                  View More Internships
+                </h2>
+                <p className="mt-2 text-gray-300 text-lg">
+                  Explore all Internships
+                </p>
+
+                <div className="mt-6 flex justify-center">
+                  <button className="w-12 h-12 flex items-center justify-center rounded-full border border-blue-500 text-blue-400 text-2xl cursor-pointer hover:text-white transition duration-300">
+                    ➡️
+                  </button>
+                </div>
+              </Link>
+            </>
+          ) : (
+            <div className="col-span-3 text-center text-gray-400">
+              No internships available
+            </div>
+          )}
         </div>
       </div>
     </div>

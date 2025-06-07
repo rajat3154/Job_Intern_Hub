@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 import LatestJobCards from "./LatestJobCards";
 
 const LatestJobs = ({ query }) => {
   const [latestJobs, setLatestJobs] = useState([]);
+  const navigate = useNavigate();
+  const { user } = useSelector((store) => store.auth);
 
   const fetchLatestJobs = async () => {
     try {
@@ -12,7 +15,6 @@ const LatestJobs = ({ query }) => {
         headers: {
           "Content-Type": "application/json",
         },
-        credentials: "include",
       });
 
       const data = await response.json();
@@ -55,6 +57,14 @@ const LatestJobs = ({ query }) => {
 
   console.log("Filtered Jobs:", filteredJobs); // ✅ DEBUG LOG
 
+  const handleJobAction = (jobId) => {
+    if (!user) {
+      navigate('/signup');
+      return;
+    }
+    navigate(`/job/description/${jobId}`);
+  };
+
   return (
     <div className="bg-black text-white py-16">
       <div className="container mx-auto text-center px-4">
@@ -63,20 +73,22 @@ const LatestJobs = ({ query }) => {
           Openings
         </h1>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mx-4">
           {filteredJobs.length <= 0 ? (
             <span className="col-span-full text-gray-400 text-lg">
               No Job Available
             </span>
           ) : (
             filteredJobs.map((job) => (
-              <LatestJobCards key={job._id} job={job} />
+              <div key={job._id} className="w-full">
+                <LatestJobCards key={job._id} job={job} />
+              </div>
             ))
           )}
 
           <Link
             to="/jobs"
-            className="p-6 rounded-lg shadow-lg bg-black text-white border border-blue-500 hover:bg-gray-800 cursor-pointer transition duration-300 flex flex-col items-center justify-center"
+            className="w-full p-6 rounded-lg shadow-lg bg-black text-white border border-blue-500 hover:bg-gray-800 cursor-pointer transition duration-300 flex flex-col items-center justify-center"
           >
             <h2 className="text-2xl font-bold text-blue-400">View More Jobs</h2>
             <p className="mt-2 text-gray-300 text-lg">

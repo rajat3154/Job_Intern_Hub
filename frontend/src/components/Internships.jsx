@@ -18,6 +18,7 @@ const Internships = () => {
 
   const fetchInternships = async () => {
     try {
+      console.log("Fetching internships...");
       const response = await fetch(
         "http://localhost:8000/api/v1/internship/get",
         {
@@ -27,8 +28,13 @@ const Internships = () => {
         }
       );
       const data = await response.json();
+      console.log("API Response:", data);
+
       if (data.success && Array.isArray(data.internships)) {
+        console.log("Valid internships data:", data.internships);
         dispatch(setAllInternships(data.internships));
+      } else {
+        console.warn("Invalid response format:", data);
       }
     } catch (error) {
       console.error("Error fetching internships:", error);
@@ -37,6 +43,7 @@ const Internships = () => {
 
   const fetchRecruiterInternships = async () => {
     try {
+      console.log("Fetching recruiter internships...");
       const response = await fetch(
         "http://localhost:8000/api/v1/internship/recruiter",
         {
@@ -46,9 +53,13 @@ const Internships = () => {
         }
       );
       const data = await response.json();
+      console.log("Recruiter API Response:", data);
+
       if (data.success && Array.isArray(data.internships)) {
+        console.log("Valid recruiter internships:", data.internships);
         setRecruiterInternships(data.internships);
       } else {
+        console.warn("Invalid recruiter response:", data);
         setRecruiterInternships([]);
       }
     } catch (error) {

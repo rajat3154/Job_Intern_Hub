@@ -29,42 +29,25 @@ const Discover = () => {
     const fetchUsers = async () => {
       try {
         setLoading(true);
-        const [studentsRes, recruitersRes, followingRes] = await Promise.all([
+        const [studentsRes, recruitersRes] = await Promise.all([
           axios.get("http://localhost:8000/api/v1/students", {
             withCredentials: true,
           }),
           axios.get("http://localhost:8000/api/v1/recruiter/recruiters", {
             withCredentials: true,
           }),
-          axios.get(
-            `http://localhost:8000/api/v1/follow/following/${authUser._id}/${authUser.role}`,
-            {
-              withCredentials: true,
-            }
-          ),
         ]);
 
-        // Get list of users being followed
-        const followingIds = followingRes.data.data.map((user) => user._id);
-
-        // Filter out students who are being followed
         const students = (studentsRes.data?.data || [])
-          .filter(
-            (student) =>
-              student._id !== authUser?._id && !followingIds.includes(student._id)
-          )
+          .filter((student) => student._id !== authUser?._id)
           .map((student) => ({
             ...student,
             userType: "student",
             displayName: student.fullname,
           }));
 
-        // Filter out recruiters who are being followed
         const recruiters = (recruitersRes.data?.recruiters || [])
-          .filter(
-            (recruiter) =>
-              recruiter._id !== authUser?._id && !followingIds.includes(recruiter._id)
-          )
+          .filter((recruiter) => recruiter._id !== authUser?._id)
           .map((recruiter) => ({
             ...recruiter,
             userType: "recruiter",
@@ -79,10 +62,8 @@ const Discover = () => {
       }
     };
 
-    if (authUser?._id) {
-      fetchUsers();
-    }
-  }, [authUser?._id, authUser?.role]);
+    fetchUsers();
+  }, [authUser?._id]);
 
   const filteredUsers = users.filter(
     (user) =>
@@ -172,7 +153,7 @@ const Discover = () => {
                   exit={{ opacity: 0, scale: 0.9 }}
                   transition={{ delay: index * 0.05 }}
                   whileHover={{ y: -5 }}
-                  className="bg-gradient-to-b from-gray-900/80 to-gray-900/50 rounded-xl border border-gray-800/50 p-6 hover:border-blue-500/30 hover:shadow-lg hover:shadow-blue-500/10 transition-all flex flex-col h-full"
+                  className="bg-gradient-to-b from-gray-900/80 to-gray-900/50 rounded-xl border border-gray-800/50 p-6 hover:border-blue-500/30 hover:shadow-lg hover:shadow-blue-500/10 transition-all"
                 >
                   <div className="flex items-center gap-4 mb-4">
                     <Avatar className="h-16 w-16 border-2 border-blue-500/50">
@@ -181,18 +162,13 @@ const Discover = () => {
                         {user.displayName?.charAt(0)}
                       </AvatarFallback>
                     </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-white truncate">
+                    <div>
+                      <h3 className="font-semibold text-white truncate max-w-[150px]">
                         {user.displayName}
                       </h3>
-                      <p className="text-sm text-gray-300 line-clamp-2 mt-1 mb-2">
-                        {user.profile?.bio || (user.userType === "student" 
-                          ? "No bio provided yet" 
-                          : "No company description available")}
-                      </p>
                       <Badge
                         variant="outline"
-                        className={`text-xs ${
+                        className={`mt-1 text-xs ${
                           user.userType === "student"
                             ? "bg-blue-900/30 text-blue-300 border-blue-800"
                             : "bg-purple-900/30 text-purple-300 border-purple-800"
@@ -208,11 +184,9 @@ const Discover = () => {
                     </div>
                   </div>
 
-                  <div className="flex-1">
-                    <p className="text-sm text-gray-400 mb-4 truncate">
-                      {user.email}
-                    </p>
-                  </div>
+                  <p className="text-sm text-gray-400 mb-4 truncate">
+                    {user.email}
+                  </p>
 
                   <div className="flex gap-2">
                     <Button

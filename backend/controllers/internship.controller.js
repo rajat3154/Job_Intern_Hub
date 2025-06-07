@@ -136,3 +136,23 @@ export const getInternshipsByRecruiter = async (req, res) => {
             });
       }
 };
+
+export const getLatestInternships = async (req, res) => {
+      try {
+            const internships = await Internship.find()
+                  .sort({ createdAt: -1 })
+                  .limit(5)
+                  .populate('created_by', 'companyname profile.profilePhoto');
+
+            res.status(200).json({
+                  success: true,
+                  internships
+            });
+      } catch (error) {
+            console.error("Failed to fetch latest internships:", error);
+            res.status(500).json({
+                  success: false,
+                  message: "Failed to fetch latest internships"
+            });
+      }
+};
