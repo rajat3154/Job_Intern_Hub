@@ -6,5 +6,5 @@ router.route("/post").post(isAuthenticated, postJob);
 router.route("/get").get(isAuthenticated, getAllJobs);
 router.route("/get/:id").get(isAuthenticated, getJobById);
 router.route("/recruiter").get(isAuthenticated, getRecruiterJobs);
-router.route("/latest").get(getLatestJobs); 
+router.route("/latest").get(isAuthenticated, getLatestJobs); 
 export default router;

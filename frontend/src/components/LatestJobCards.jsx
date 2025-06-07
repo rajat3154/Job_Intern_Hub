@@ -1,49 +1,75 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
+import axios from "axios";
+import { toast } from "sonner";
 import { Button } from "./ui/button";
+import { APPLICATION_API_END_POINT } from "@/utils/constant";
+import { setSingleJob } from "@/redux/jobSlice";
+import { Bookmark, BookmarkCheck } from "lucide-react";
 
 const LatestJobCards = ({ job }) => {
   const navigate = useNavigate();
   const { user } = useSelector((store) => store.auth);
+  const [isSaved, setIsSaved] = useState(false);
 
-  const handleCardClick = (e) => {
-    e.preventDefault();
-    if (!user) {
-      navigate('/signup');
-      return;
-    }
-    navigate(`/job/description/${job._id}`);
-  };
-
-  const handleButtonClick = (e) => {
+  const handleSaveJob = async (e) => {
     e.stopPropagation();
     if (!user) {
       navigate('/signup');
       return;
     }
-    navigate(`/job/description/${job._id}`);
+
+    try {
+      const response = await fetch(
+        `http://localhost:8000/api/v1/save-job/${job._id}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include'
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to save job');
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        setIsSaved(data.isSaved);
+        toast.success(data.message);
+      }
+    } catch (error) {
+      console.error('Error saving job:', error);
+      toast.error('Failed to save job');
+    }
   };
 
   return (
-    <div
-      onClick={handleCardClick}
-      className="w-full p-6 rounded-lg shadow-lg bg-black text-white border border-blue-500 hover:bg-gray-800 cursor-pointer transition duration-300 flex flex-col h-full relative"
-    >
+    <div className="w-full p-6 rounded-lg shadow-lg bg-black text-white border border-blue-500 hover:bg-gray-800 cursor-pointer transition duration-300 flex flex-col h-full relative">
       {/* Action Buttons in Top Right */}
       <div className="absolute top-3 right-4 flex gap-2">
         <Button
-          onClick={handleButtonClick}
+          onClick={(e) => {
+            e.stopPropagation();
+            navigate(`/job/description/${job._id}`);
+          }}
           variant="outline"
           className="px-3 py-1 bg-purple-500 border-purple-500 text-white text-sm font-bold rounded-md hover:bg-purple-600 cursor-pointer"
         >
           View Details
         </Button>
         <Button
-          onClick={handleButtonClick}
-          className="px-3 py-1 bg-green-500 border-green-500 text-white text-sm font-bold rounded-md hover:bg-green-600 cursor-pointer"
+          onClick={handleSaveJob}
+          variant="outline"
+          className={`px-3 py-1 text-sm font-bold rounded-md flex items-center gap-2 ${
+            isSaved ? "bg-blue-500 hover:bg-blue-600" : "bg-gray-600 hover:bg-gray-700"
+          }`}
         >
-          Apply Now
+          {isSaved ? <BookmarkCheck size={16} /> : <Bookmark size={16} />}
+          {isSaved ? "Saved" : "Save Job"}
         </Button>
       </div>
 

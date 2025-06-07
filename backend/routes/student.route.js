@@ -111,4 +111,45 @@ router.get("/students", isAuthenticated, async (req, res) => {
 });
 router.get('/recruiter/profile/:id', isAuthenticated, getRecruiterProfile);
 router.get('/recruiter/:id/jobs', isAuthenticated, getRecruiterJobs);
+
+// Save/Unsave job route
+router.post("/save-job/:jobId", isAuthenticated, async (req, res) => {
+  try {
+    const { jobId } = req.params;
+    const studentId = req.user._id;
+
+    const student = await Student.findById(studentId);
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: "Student not found"
+      });
+    }
+
+    const jobIndex = student.savedJobs.indexOf(jobId);
+    const isSaved = jobIndex === -1;
+
+    if (isSaved) {
+      student.savedJobs.push(jobId);
+    } else {
+      student.savedJobs.splice(jobIndex, 1);
+    }
+
+    await student.save();
+
+    res.status(200).json({
+      success: true,
+      isSaved,
+      message: isSaved ? "Job saved successfully" : "Job removed from saved jobs"
+    });
+
+  } catch (error) {
+    console.error("Save job error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to save job"
+    });
+  }
+});
+
 export default router;

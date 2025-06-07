@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import userRoutes from "./routes/user.route.js";
 import jobRoutes from "./routes/job.route.js";
 import messageRoutes from "./routes/message.route.js";
+import studentRouter from "./routes/student.route.js";
 import { createServer } from "http";
 import { Server } from "socket.io";
 
@@ -24,6 +25,7 @@ mongoose
 app.use("/api/v1/user", userRoutes);
 app.use("/api/v1/job", jobRoutes);
 app.use("/api/v1/message", messageRoutes);
+app.use("/api/v1/student", studentRouter);
 
 const httpServer = createServer(app);
 
