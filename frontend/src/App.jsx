@@ -19,6 +19,7 @@ import RecruiterProfile from "./components/RecruiterProfile";
 import { SocketProvider } from "./context/SocketContext";
 import { AuthProvider } from "./context/AuthContext";
 import { useAuth } from "./context/AuthContext";
+import Discover from "./components/Discover";
 const appRouter = createBrowserRouter([
   {
     path: "/",
@@ -87,6 +88,10 @@ const appRouter = createBrowserRouter([
   {
     path: "/recruiter/profile",
     element: <RecruiterProfile />,
+  },
+  {
+    path: "/discover",
+    element: <Discover />,
   },
 ]);
 function AppContent() {

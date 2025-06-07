@@ -67,6 +67,14 @@ const Navbar = () => {
                 </li>
                 <li>
                   <Link
+                    to="/discover"
+                    className="hover:text-white transition duration-300 cursor-pointer"
+                  >
+                    Discover
+                  </Link>
+                </li>
+                <li>
+                  <Link
                     to="/notifications"
                     className="hover:text-white transition duration-300 cursor-pointer"
                   >
@@ -83,6 +91,14 @@ const Navbar = () => {
                     className="hover:text-white transition duration-300 cursor-pointer"
                   >
                     Home
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/discover"
+                    className="hover:text-white transition duration-300 cursor-pointer"
+                  >
+                    Discover
                   </Link>
                 </li>
                 <li>
