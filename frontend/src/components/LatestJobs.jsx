@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import LatestJobCards from "./LatestJobCards";
+import { toast } from "sonner";
 
 const LatestJobs = ({ query }) => {
   const [latestJobs, setLatestJobs] = useState([]);
@@ -12,15 +13,11 @@ const LatestJobs = ({ query }) => {
     try {
       const response = await fetch("http://localhost:8000/api/v1/job/latest", {
         method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+    
       });
 
       const data = await response.json();
-      console.log("Fetched jobs data:", data); // ✅ DEBUG LOG
-
       if (data.success && Array.isArray(data.jobs)) {
         setLatestJobs(data.jobs);
       } else {
@@ -37,14 +34,13 @@ const LatestJobs = ({ query }) => {
 
   const filteredJobs = latestJobs.filter((job) => {
     const q = query?.toLowerCase().trim();
-    if (!q) return true; // if query is empty, return all jobs
-
+    if (!q) return true;
     const combinedValues = [
       job.title,
       job.description,
-      job.company?.name,
+      job.company?.name || job.company, // some data might have company as string or object
       job.location,
-      job.type,
+      job.jobType || job.type,
       job.stipend,
       job.duration,
       ...(job.skills || []),
@@ -56,14 +52,43 @@ const LatestJobs = ({ query }) => {
     return combinedValues.includes(q);
   });
 
-  console.log("Filtered Jobs:", filteredJobs); // ✅ DEBUG LOG
-
-  const handleJobAction = (jobId) => {
+  // Handles job card "View Details" clicks
+  const handleJobClick = (jobId) => {
     if (!user) {
-      navigate('/signup');
+      navigate("/signup");
       return;
     }
     navigate(`/job/description/${jobId}`);
+  };
+
+  // Handles job card "Save Job" clicks
+  const handleSaveClick = async (jobId, setIsSaved) => {
+    if (!user) {
+      navigate("/signup");
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `http://localhost:8000/api/v1/job/save-job/${jobId}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+        }
+      );
+
+      if (!response.ok) throw new Error("Failed to save job");
+
+      const data = await response.json();
+      if (data.success) {
+        setIsSaved(true);
+        toast.success(data.message || "Job saved successfully");
+      }
+    } catch (error) {
+      console.error("Error saving job:", error);
+      toast.error("Failed to save job");
+    }
   };
 
   return (
@@ -81,9 +106,12 @@ const LatestJobs = ({ query }) => {
             </span>
           ) : (
             filteredJobs.map((job) => (
-              <div key={job._id} className="w-full">
-                <LatestJobCards key={job._id} job={job} />
-              </div>
+              <LatestJobCards
+                key={job._id}
+                job={job}
+                onDetails={handleJobClick}
+                onSave={handleSaveClick}
+              />
             ))
           )}
 

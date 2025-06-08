@@ -1,98 +1,57 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { useSelector } from "react-redux";
-import axios from "axios";
-import { toast } from "sonner";
 import { Button } from "./ui/button";
-import { APPLICATION_API_END_POINT } from "@/utils/constant";
-import { setSingleJob } from "@/redux/jobSlice";
 import { Bookmark, BookmarkCheck } from "lucide-react";
 
-const LatestJobCards = ({ job }) => {
-  const navigate = useNavigate();
-  const { user } = useSelector((store) => store.auth);
+const LatestJobCards = ({ job, onDetails, onSave }) => {
   const [isSaved, setIsSaved] = useState(false);
 
   useEffect(() => {
-    // Check if job is saved when component mounts
-    const checkIfJobSaved = async () => {
-      if (!user) return;
-      try {
-        const response = await fetch(
-          `http://localhost:8000/api/v1/job/is-saved/${job._id}`,
-          {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            credentials: 'include'
-          }
-        );
+    // Reset saved state on job change
+    setIsSaved(false);
+  }, [job._id]);
 
-        if (response.ok) {
-          const data = await response.json();
-          setIsSaved(data.isSaved);
-        }
-      } catch (error) {
-        console.error('Error checking saved status:', error);
-      }
-    };
-
-    checkIfJobSaved();
-  }, [job._id, user]);
-
-  const handleSaveJob = async (e) => {
+  // Optional: you can handle internal saved state update here or lift state up.
+  // For simplicity, update when parent calls onSave:
+  const handleSaveClick = (e) => {
     e.stopPropagation();
-    if (!user) {
-      navigate('/signup');
-      return;
+    if (onSave) {
+      onSave(job._id, setIsSaved);
     }
+  };
 
-    try {      const response = await fetch(
-        `http://localhost:8000/api/v1/job/save-job/${job._id}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          credentials: 'include'
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to save job');
-      }
-
-      const data = await response.json();
-      if (data.success) {
-        setIsSaved(data.isSaved);
-        toast.success(data.message);
-      }
-    } catch (error) {
-      console.error('Error saving job:', error);
-      toast.error('Failed to save job');
+  const handleViewDetailsClick = (e) => {
+    e.stopPropagation();
+    if (onDetails) {
+      onDetails(job._id);
     }
   };
 
   return (
-    <div className="w-full p-6 rounded-lg shadow-lg bg-black text-white border border-blue-500 hover:bg-gray-800 cursor-pointer transition duration-300 flex flex-col h-full relative">
-      {/* Action Buttons in Top Right */}
+    <div
+      className="w-full p-6 rounded-lg shadow-lg bg-black text-white border border-blue-500 hover:bg-gray-800 cursor-pointer transition duration-300 flex flex-col h-full relative"
+      onClick={handleViewDetailsClick}
+      role="button"
+      tabIndex={0}
+      onKeyPress={(e) => {
+        if (e.key === "Enter") handleViewDetailsClick(e);
+      }}
+    >
+      {/* Action Buttons */}
       <div className="absolute top-3 right-4 flex gap-2">
         <Button
-          onClick={(e) => {
-            e.stopPropagation();
-            navigate(`/job/description/${job._id}`);
-          }}
+          onClick={handleViewDetailsClick}
           variant="outline"
           className="px-3 py-1 bg-purple-500 border-purple-500 text-white text-sm font-bold rounded-md hover:bg-purple-600 cursor-pointer"
         >
           View Details
         </Button>
         <Button
-          onClick={handleSaveJob}
+          onClick={handleSaveClick}
           variant="outline"
           className={`px-3 py-1 text-sm font-bold rounded-md flex items-center gap-2 ${
-            isSaved ? "bg-blue-500 hover:bg-blue-600" : "bg-gray-600 hover:bg-gray-700"
+            isSaved
+              ? "bg-blue-500 hover:bg-blue-600"
+              : "bg-gray-600 hover:bg-gray-700"
           }`}
         >
           {isSaved ? <BookmarkCheck size={16} /> : <Bookmark size={16} />}
@@ -100,41 +59,50 @@ const LatestJobCards = ({ job }) => {
         </Button>
       </div>
 
-      {/* Rest of the card content with adjusted top padding */}
-      <div className="mt-12">
+      {/* Card Content */}
+      <div className="mt-12 flex flex-col flex-grow">
         <div className="flex items-center justify-between mb-4">
           <p className="text-sm text-gray-400">
-            {new Date(job.createdAt).toDateString()}
+            {job.createdAt ? new Date(job.createdAt).toDateString() : "N/A"}
           </p>
         </div>
 
         <div className="flex items-center gap-3 mb-6">
           <img
-            src={job.created_by?.profile?.profilePhoto || "https://via.placeholder.com/50"}
+            src={
+              job.created_by?.profile?.profilePhoto ||
+              "https://via.placeholder.com/50"
+            }
             alt="Company Logo"
             className="w-12 h-12 rounded-full"
           />
           <div>
-            <h1 className="font-semibold text-lg">{job.company || "Company"}</h1>
-            <p className="text-sm text-gray-400">{job.location}</p>
+            <h1 className="font-semibold text-lg">
+              {job.company || "Company"}
+            </h1>
+            <p className="text-sm text-gray-400">
+              {job.location || "Location not specified"}
+            </p>
           </div>
         </div>
 
         <div className="mb-4 flex-grow">
-          <h1 className="font-bold text-xl mb-3">{job.title}</h1>
-          <p className="text-sm text-gray-300 line-clamp-3">{job.description}</p>
+          <h1 className="font-bold text-xl mb-3">{job.title || "Job Title"}</h1>
+          <p className="text-sm text-gray-300 line-clamp-3">
+            {job.description || "No description available."}
+          </p>
         </div>
 
         <div className="mt-auto space-y-4">
           <div className="flex flex-wrap gap-2">
             <span className="px-2 py-1 bg-blue-400 text-black text-sm font-bold rounded-md">
-              {job.position} Positions
+              {job.position || 1} Position{job.position > 1 ? "s" : ""}
             </span>
             <span className="px-2 py-1 bg-red-600 text-white text-sm font-bold rounded-md">
-              {job.jobType}
+              {job.jobType || "Type N/A"}
             </span>
             <span className="px-2 py-1 bg-yellow-400 text-black text-sm font-bold rounded-md">
-              {job.salary} LPA
+              {job.salary ? `${job.salary} LPA` : "Salary N/A"}
             </span>
           </div>
         </div>
