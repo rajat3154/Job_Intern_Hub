@@ -15,8 +15,8 @@ export const postInternship = async (req, res) => {
                   skills,
             } = req.body;
 
-            const recruiterId = req.user.id; // Logged-in recruiter ID from auth middleware
-            console.log(recruiterId);
+            const recruiterId = req.user._id; // Use _id, not id
+
             if (!title || !description || !duration || !stipend || !location || !type || !skills) {
                   return res.status(400).json({
                         message: "Please fill in all fields",
@@ -37,6 +37,7 @@ export const postInternship = async (req, res) => {
                   type,
                   skills: skillsArray,
                   recruiter: recruiterId,
+                  created_by: recruiterId,  // << Add this line!
             });
 
             return res.status(201).json({
@@ -52,7 +53,7 @@ export const postInternship = async (req, res) => {
             });
       }
 };
-
+    
 export const getAllInternships = async (req, res) => {
       try {
             const internships = await Internship.find({})
@@ -87,39 +88,72 @@ export const getAllInternships = async (req, res) => {
 export const getInternshipById = async (req, res) => {
       try {
             const internshipId = req.params.id;
-            console.log("Received internshipId:", internshipId); 
+            const userId = req.user?._id; // get logged in user ID from auth middleware
+
+            console.log("Received internshipId:", internshipId);
+
             const internship = await Internship.findById(internshipId).populate({
-                  path: "applications"
+                  path: "applications",
+                  populate: {
+                        path: "applicant",
+                        model: "Student",
+                        select: "fullname email resumeUrl"
+                  }
             });
+
             if (!internship) {
                   return res.status(404).json({
                         message: "Internship not found",
                         success: false
-                  })
-            };
+                  });
+            }
+
+            // Find if the logged in user has applied and get their application status
+            let currentUserApplication = null;
+            if (userId) {
+                  const userApp = internship.applications.find(
+                        (app) => app.applicant._id.toString() === userId.toString()
+                  );
+                  if (userApp) {
+                        currentUserApplication = {
+                              status: userApp.status,
+                              appliedDate: userApp.createdAt
+                        };
+                  }
+            }
+
             return res.status(200).json({
                   internship,
+                  currentUserId: userId || null,
+                  currentUserApplication,
                   success: true
-            })
+            });
       } catch (error) {
             console.log(error);
+            return res.status(500).json({
+                  message: "Failed to fetch internship",
+                  success: false,
+                  error: error.message
+            });
       }
-}
+};
+
+
 export const getInternshipsByRecruiter = async (req, res) => {
       try {
-            // Fetch the internships where the recruiter field matches the logged-in user's ID
-            const recruiterId = req.user.id; // Get the recruiter ID from the authenticated user
+            const recruiterId = req.user._id;
             const internships = await Internship.find({ recruiter: recruiterId })
                   .populate({
                         path: "recruiter",
-                        select: "companyname email companyaddress companystatus", // Populate the recruiter fields you need
+                        select: "companyname email companyaddress companystatus",
                   })
-                  .sort({ createdAt: -1 }); // Sort by the most recent internships
+                  .sort({ createdAt: -1 });
 
             if (!internships || internships.length === 0) {
                   return res.status(404).json({
                         message: "No internships found for this recruiter",
                         success: false,
+                        internships: [],
                   });
             }
 

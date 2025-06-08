@@ -1,129 +1,157 @@
-import React, { useEffect } from "react";
-import { Button } from "./ui/button";
+import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
 import axios from "axios";
-import { setSingleInternship } from "@/redux/internshipSlice";
-import { INTERNSHIP_API_END_POINT } from "@/utils/constant";
+import { toast } from "sonner";
 
 const InternshipDescription = () => {
-  const params = useParams();
-  const internshipId = params.id;
-  const dispatch = useDispatch();
-  const { singleInternship } = useSelector((store) => store.internship);
+  const { id } = useParams();
+  const [internship, setInternship] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [applying, setApplying] = useState(false);
+  const [hasApplied, setHasApplied] = useState(false);
+  const [applicationStatus, setApplicationStatus] = useState(null);
+
+  const fetchInternshipDetails = async () => {
+    try {
+      const { data } = await axios.get(
+        `http://localhost:8000/api/v1/internship/get/${id}`,
+        { withCredentials: true }
+      );
+      setInternship(data.internship);
+
+      // If current user has applied, get their application status
+      if (data.currentUserApplication) {
+        setHasApplied(true);
+        setApplicationStatus(data.currentUserApplication.status || "Pending");
+      } else {
+        setHasApplied(false);
+        setApplicationStatus(null);
+      }
+    } catch (error) {
+      console.error("Failed to fetch internship details:", error);
+      toast.error("Failed to load internship details.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchSingleInternship = async () => {
-      try {
-        const res = await axios.get(
-          `${INTERNSHIP_API_END_POINT}/get/${internshipId}`,
-          {
-            withCredentials: true,
-          }
-        );
-        if (res.data.success) {
-          dispatch(setSingleInternship(res.data.internship));
-        }
-      } catch (error) {
-        console.error(error);
+    fetchInternshipDetails();
+  }, [id]);
+
+  const handleApply = async () => {
+    if (!id) return;
+    try {
+      setApplying(true);
+      const res = await axios.post(
+        `http://localhost:8000/api/v1/application/apply/intern/${id}`,
+        {},
+        { withCredentials: true }
+      );
+      if (res.data.success) {
+        toast.success("Applied successfully!");
+        setHasApplied(true);
+        setApplicationStatus("Pending");
+      } else {
+        toast.error(res.data.message || "Failed to apply");
       }
-    };
+    } catch (error) {
+      console.error(error);
+      toast.error("Error while applying.");
+    } finally {
+      setApplying(false);
+    }
+  };
 
-    fetchSingleInternship();
-  }, [internshipId, dispatch]);
-
-  if (!singleInternship) {
+  if (loading)
+    return <div className="text-white text-center mt-20">Loading...</div>;
+  if (!internship)
     return (
-      <div className="text-white text-center mt-10">Loading job data...</div>
+      <div className="text-white text-center mt-20">Internship not found.</div>
     );
-  }
 
   return (
-    <div className="bg-black text-white min-h-screen py-20 overflow-x-hidden overflow-y-hidden">
+    <div className="bg-black text-white min-h-screen py-20 overflow-x-hidden">
       <div className="container px-4 ml-8 mr-10">
-        {/* Job Title and Apply Button */}
         <div className="flex items-center justify-between mb-6 mr-7">
-          <h1 className="text-3xl font-bold">{singleInternship.title}</h1>
-          <Button className="rounded-lg text-sm font-bold px-6 py-3 bg-green-600 cursor-pointer">
-            Apply Now
-          </Button>
+          <h1 className="text-3xl font-bold">{internship.title}</h1>
+          <button
+            onClick={handleApply}
+            disabled={applying || hasApplied}
+            className={`px-4 py-2 text-sm rounded-md font-semibold ${
+              hasApplied
+                ? "bg-gray-600 text-white cursor-not-allowed"
+                : "bg-green-500 hover:bg-green-600"
+            }`}
+          >
+            {hasApplied
+              ? "Already Applied"
+              : applying
+              ? "Applying..."
+              : "Apply Now"}
+          </button>
         </div>
 
-        {/* Job Info Badges */}
+        {/* Internship details */}
         <div className="flex gap-4 mb-6">
+          <span className="px-3 py-1 bg-orange-100 text-orange-700 text-sm font-bold rounded-md">
+            {internship.duration}
+          </span>
           <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-bold rounded-md">
-            {singleInternship.skills?.length || 0} Skills
+            ₹{internship.stipend}/month
           </span>
-          <span className="px-3 py-1 bg-red-100 text-[#F83002] text-sm font-bold rounded-md">
-            {singleInternship.type}
-          </span>
-          <span className="px-3 py-1 bg-purple-100 text-[#7209b7] text-sm font-bold rounded-md">
-            ₹{singleInternship.stipend}
+          <span className="px-3 py-1 bg-yellow-100 text-yellow-700 text-sm font-bold rounded-md">
+            {internship.type}
           </span>
         </div>
 
-        {/* Job Description */}
         <h2 className="border-b-2 border-gray-300 text-xl font-medium py-4 mb-6">
-          Internship Description
+          Internship Details
         </h2>
-        <div className="space-y-4">
-          
-          <h1 className="font-bold text-lg">
-            Role:{" "}
-            <span className="font-normal text-gray-300">
-              {singleInternship.title}
+        <div className="space-y-4 mb-12">
+          <p>
+            <strong>Role:</strong>{" "}
+            <span className="text-gray-300">{internship.title}</span>
+          </p>
+          <p>
+            <strong>Location:</strong>{" "}
+            <span className="text-gray-300">{internship.location}</span>
+          </p>
+          <p>
+            <strong>Description:</strong>{" "}
+            <span className="text-gray-300">{internship.description}</span>
+          </p>
+          <p>
+            <strong>Duration:</strong>{" "}
+            <span className="text-gray-300">{internship.duration}</span>
+          </p>
+          <p>
+            <strong>Stipend:</strong>{" "}
+            <span className="text-gray-300">₹{internship.stipend}/month</span>
+          </p>
+          <p>
+            <strong>Type:</strong>{" "}
+            <span className="text-gray-300">{internship.type}</span>
+          </p>
+          <p>
+            <strong>Required Skills:</strong>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {internship.skills?.map((skill, i) => (
+                <span
+                  key={i}
+                  className="px-2 py-1 bg-gray-700 text-white text-sm rounded-md"
+                >
+                  {skill}
+                </span>
+              ))}
+            </div>
+          </p>
+          <p>
+            <strong>Posted Date:</strong>{" "}
+            <span className="text-gray-300">
+              {new Date(internship.createdAt).toDateString()}
             </span>
-          </h1>
-          <h1 className="font-bold text-lg">
-            Location:{" "}
-            <span className="font-normal text-gray-300">
-              {singleInternship.location}
-            </span>
-          </h1>
-          <h1 className="font-bold text-lg">
-            Type:{" "}
-            <span className="font-normal text-gray-300">
-              {singleInternship.type}
-            </span>
-          </h1>
-          <h1 className="font-bold text-lg">
-            Duration:{" "}
-            <span className="font-normal text-gray-300">
-              {singleInternship.duration}
-            </span>
-          </h1>
-          <h1 className="font-bold text-lg">
-            Stipend:{" "}
-            <span className="font-normal text-gray-300">
-              ₹{singleInternship.stipend}
-            </span>
-          </h1>
-          <h1 className="font-bold text-lg">
-            Description:{" "}
-            <span className="font-normal text-gray-300">
-              {singleInternship.description}
-            </span>
-          </h1>
-          <h1 className="font-bold text-lg">
-            Required Skills:{" "}
-            <span className="font-normal text-gray-300">
-              {singleInternship.skills?.join(", ")}
-            </span>
-          </h1>
-          <h1 className="font-bold text-lg">
-            Total Applicants:{" "}
-            <span className="font-normal text-gray-300">
-              {singleInternship.applications?.length || 0}
-            </span>
-          </h1>
-          <h1 className="font-bold text-lg">
-            Posted Date:{" "}
-            <span className="font-normal text-gray-300">
-              {new Date(singleInternship.createdAt).toLocaleDateString()}
-            </span>
-          </h1>
-         
-        
+          </p>
         </div>
       </div>
     </div>

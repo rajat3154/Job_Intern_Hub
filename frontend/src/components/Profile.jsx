@@ -59,8 +59,9 @@ const Profile = () => {
   const [following, setFollowing] = useState([]);
   const [followersLoading, setFollowersLoading] = useState(true);
   const [followingLoading, setFollowingLoading] = useState(true);
+  const [appliedJobs, setAppliedJobs] = useState([]);
+  const [jobsLoading, setJobsLoading] = useState(true);
   const { user: currentUser } = useSelector((store) => store.auth);
-  const { appliedJobs, loading: jobsLoading } = useGetAppliedJobs();
   const { userId, userType } = useParams();
   const navigate = useNavigate();
 
@@ -138,6 +139,34 @@ const Profile = () => {
 
     fetchFollowData();
   }, [profileUser]);
+
+  const fetchAppliedJobs = async () => {
+    try {
+      console.log("🔄 Starting to fetch applied jobs");
+      setJobsLoading(true);
+      
+      // Using the correct API endpoint
+      const response = await axios.get('http://localhost:8000/api/v1/application/get', {
+          withCredentials: true
+      });
+      
+      console.log("📥 Applied jobs API response:", response.data);
+      
+      if (response.data.success) {
+          setAppliedJobs(response.data.appliedJobs);
+      }
+    } catch (error) {
+      console.error("❌ Error fetching applied jobs:", error.response || error);
+    } finally {
+      setJobsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (currentUser?._id && currentUser?.role === "student") {
+      fetchAppliedJobs();
+    }
+  }, [currentUser]);
 
   // Add click outside handler
   useEffect(() => {
@@ -589,66 +618,43 @@ const Profile = () => {
                             <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
                           </div>
                         ) : appliedJobs && appliedJobs.length > 0 ? (
-                          <div>
-                            <Table className="min-w-full bg-black text-white rounded-lg shadow-lg overflow-hidden">
-                              <TableHeader className="bg-blue-600">
+                          <div className="max-h-[300px] overflow-y-auto">
+                            <Table>
+                              <TableHeader>
                                 <TableRow>
-                                  <TableHead className="text-white py-3 px-4">
-                                    Date
-                                  </TableHead>
-                                  <TableHead className="text-white py-3 px-4">
-                                    Job Role
-                                  </TableHead>
-                                  <TableHead className="text-white py-3 px-4">
-                                    Company
-                                  </TableHead>
-                                  <TableHead className="text-white py-3 px-4 text-right">
-                                    Status
-                                  </TableHead>
+                                  <TableHead className="text-white py-3 px-4">Date</TableHead>
+                                  <TableHead className="text-white py-3 px-4">Job Role</TableHead>
+                                  <TableHead className="text-white py-3 px-4">Company</TableHead>
+                                  <TableHead className="text-white py-3 px-4 text-right">Status</TableHead>
                                 </TableRow>
                               </TableHeader>
                               <TableBody>
-                                {appliedJobs.slice(0, 3).map((appliedJob) => (
-                                  <TableRow
-                                    key={appliedJob._id}
-                                    className="hover:bg-blue-700 transition-all duration-200"
-                                  >
+                                {appliedJobs.map((app) => (
+                                  <TableRow key={app._id} className="hover:bg-blue-700 transition-all duration-200 text-white">
                                     <TableCell className="py-3 px-4">
-                                      {appliedJob?.createdAt?.split("T")[0]}
+                                      {new Date(app.createdAt).toLocaleDateString()}
                                     </TableCell>
+                                    <TableCell className="py-3 px-4">{app.job?.title}</TableCell>
                                     <TableCell className="py-3 px-4">
-                                      {appliedJob.job?.title}
-                                    </TableCell>
-                                    <TableCell className="py-3 px-4">
-                                      {appliedJob.job?.created_by?.companyname}
+                                      {app.job?.created_by?.companyname}
                                     </TableCell>
                                     <TableCell className="py-3 px-4 text-right">
                                       <Badge
                                         className={`${
-                                          appliedJob?.status === "rejected"
+                                          app.status === "rejected"
                                             ? "bg-red-400 text-white"
-                                            : appliedJob.status === "pending"
+                                            : app.status === "pending"
                                             ? "bg-gray-400 text-white"
                                             : "bg-green-400 text-white"
                                         } py-1 px-3 rounded-full`}
                                       >
-                                        {appliedJob.status.toUpperCase()}
+                                        {app.status.toUpperCase()}
                                       </Badge>
                                     </TableCell>
                                   </TableRow>
                                 ))}
                               </TableBody>
                             </Table>
-                            {appliedJobs.length > 3 && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="w-full text-sm text-white hover:text-blue-400 hover:bg-gray-800/50 mt-2"
-                                onClick={() => navigate("/applied-jobs")}
-                              >
-                                View all {appliedJobs.length} applications
-                              </Button>
-                            )}
                           </div>
                         ) : (
                           <p className="text-sm text-white">
@@ -663,16 +669,7 @@ const Profile = () => {
             </motion.div>
           </div>
 
-          {/* Sidebar - Users to Follow */}
-          <div className="lg:col-span-2">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-            >
-              <UsersToFollow />
-            </motion.div>
-          </div>
+          
         </div>
       </div>
 

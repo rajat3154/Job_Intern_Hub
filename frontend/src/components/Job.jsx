@@ -12,13 +12,22 @@ import {
 import { Avatar } from "@radix-ui/react-avatar";
 import { AvatarImage } from "./ui/avatar";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 
 const Job = ({ job }) => {
   const [isSaved, setIsSaved] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
-
-  // Get the current user from Redux
+  const navigate = useNavigate();
   const user = useSelector((state) => state.auth.user);
+
+  const handleViewDetails = () => {
+    console.log("Current user role:", user.role); // Add logging to debug
+    if (user?.role?.toLowerCase() === "student") {
+      navigate(`/job-description/${job._id}`);
+    } else if (user?.role?.toLowerCase() === "recruiter") {
+      navigate(`/job-details/${job._id}`);
+    }
+  };
 
   return (
     <motion.div
@@ -116,12 +125,12 @@ const Job = ({ job }) => {
             <span className="font-medium text-blue-50">{job?.position}</span>
           </div>
 
-          {/* 👇 Only show if the user is a student */}
-          {user?.role === "student" && (
-            <Button className="bg-blue-500/90 hover:bg-blue-400 text-white rounded-xl px-6 py-4 shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 transition-all">
-              Apply Now
-            </Button>
-          )}
+          <Button
+            onClick={handleViewDetails}
+            className="bg-blue-500/90 hover:bg-blue-400 text-white rounded-xl px-6 py-4 shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 transition-all"
+          >
+            View Details
+          </Button>
         </div>
       </div>
     </motion.div>

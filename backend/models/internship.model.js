@@ -12,7 +12,7 @@ const internshipSchema = new mongoose.Schema({
       applications: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Application' }],
       created_by: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
+        ref: "Recruiter",
         required: true
       }
 }, { timestamps: true });

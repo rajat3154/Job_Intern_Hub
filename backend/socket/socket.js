@@ -5,60 +5,63 @@ import express from "express";
 const app = express();
 const server = http.createServer(app);
 
-let io = null;
-const userSocketMap = new Map(); // To store user-socket mappings
+let io;
+const userSockets = new Map();
 
-export const initializeSocket = (server) => {
-      try {
-            io = new Server(server, {
-                  cors: {
-                        origin: process.env.FRONTEND_URL || "http://localhost:5173",
-                        methods: ["GET", "POST"],
-                        credentials: true
-                  },
-                  transports: ['websocket', 'polling']
+export const initSocket = (server) => {
+      io = new Server(server, {
+            cors: {
+                  origin: process.env.FRONTEND_URL || "http://localhost:5173",
+                  methods: ["GET", "POST"],
+                  credentials: true,
+                  allowedHeaders: ["Content-Type"]
+            },
+            transports: ['websocket', 'polling'],
+            path: '/socket.io/',
+            pingTimeout: 60000
+      });
+
+      io.on("connection", (socket) => {
+            console.log("New client connected:", socket.id);
+
+            socket.on("setup", (userId) => {
+                  socket.userId = userId;
+                  socket.join(userId);
+                  userSockets.set(userId, socket.id);
+                  socket.emit("connected");
+                  io.emit("user:status", { userId, isOnline: true });
             });
 
-            console.log("Socket.IO initialized successfully");
-
-            io.on("connection", (socket) => {
-                  console.log("Client connected:", socket.id);
-
-                  // Add socket mapping when user connects
-                  socket.on("setup", (userId) => {
-                        userSocketMap.set(userId, socket.id);
-                        console.log("User connected:", userId, socket.id);
-                  });
-
-                  socket.on("disconnect", () => {
-                        // Remove socket mapping when user disconnects
-                        for (const [userId, socketId] of userSocketMap.entries()) {
-                              if (socketId === socket.id) {
-                                    userSocketMap.delete(userId);
-                                    console.log("User disconnected:", userId);
-                                    break;
-                              }
-                        }
-                  });
+            socket.on("disconnect", () => {
+                  if (socket.userId) {
+                        userSockets.delete(socket.userId);
+                        io.emit("user:status", { userId: socket.userId, isOnline: false });
+                  }
             });
 
-            return io;
-      } catch (error) {
-            console.error("Socket initialization error:", error);
-            throw error;
-      }
-};
+            socket.on("join_chat", (chatId) => {
+                  socket.join(chatId);
+                  console.log("User joined chat:", chatId);
+            });
 
-export const getReceiverSocketId = (receiverId) => {
-      return userSocketMap.get(receiverId);
+            socket.on("new_message", (message) => {
+                  const receiverSocket = userSockets.get(message.receiverId);
+                  if (receiverSocket) {
+                        io.to(receiverSocket).emit("message_received", message);
+                  }
+            });
+      });
+
+      return io;
 };
 
 export const getIO = () => {
-      if (!io) {
-            console.warn("Attempting to use Socket.IO before initialization");
-            return null;
-      }
+      if (!io) throw new Error("Socket.io not initialized");
       return io;
+};
+
+export const getReceiverSocketId = (receiverId) => {
+      return userSockets.get(receiverId);
 };
 
 export { app, io, server };

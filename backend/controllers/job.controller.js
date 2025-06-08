@@ -113,41 +113,28 @@ export const getJobById = async (req, res) => {
 
 
 export const getRecruiterJobs = async (req, res) => {
-      try {
-            console.log("Authenticated user ID:", req.user.id);  // <-- Add this log
+    try {
+        const recruiterId = req.user._id;
+        console.log("Finding jobs for recruiter ID:", recruiterId);
 
-            const jobs = await Job.find({ created_by: req.user.id })
-                  .populate({
-                        path: "applications",
-                        select: "student status appliedAt",
-                  })
-                  .populate({
-                        path: "created_by",
-                        select: "companyname profile.profilePhoto",
-                  })
-                  .sort({ createdAt: -1 });
+        const jobs = await Job.find({ created_by: recruiterId })
+            .populate('created_by')
+            .populate('applications')
+            .sort({ createdAt: -1 });
 
-            if (!jobs.length) {
-                  return res.status(200).json({
-                        message: "You haven't posted any jobs yet",
-                        jobs: [],
-                        success: true,
-                  });
-            }
+        console.log(`Found ${jobs.length} jobs for recruiter`);
 
-            return res.status(200).json({
-                  message: "Your job postings",
-                  jobs,
-                  success: true,
-                  count: jobs.length,
-            });
-      } catch (error) {
-            console.error("Recruiter jobs fetch error:", error);
-            return res.status(500).json({
-                  message: "Failed to fetch your jobs",
-                  success: false,
-            });
-      }
+        return res.status(200).json({
+            success: true,
+            jobs: jobs
+        });
+    } catch (error) {
+        console.error("Error in getRecruiterJobs:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Error fetching recruiter jobs"
+        });
+    }
 };
 // Get latest jobs
 export const getLatestJobs = async (req, res) => {

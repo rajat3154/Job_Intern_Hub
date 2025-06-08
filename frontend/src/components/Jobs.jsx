@@ -84,8 +84,9 @@ const Jobs = () => {
   };
   const fetchJobs = async () => {
     try {
+      console.log("Fetching jobs for recruiter:", user._id);
       const response = await fetch(
-        "http://localhost:8000/api/v1/job/recruiter",
+        "http://localhost:8000/api/v1/job/recruiter/get", // Fixed endpoint to match backend route
         {
           method: "GET",
           headers: { "Content-Type": "application/json" },
@@ -94,19 +95,14 @@ const Jobs = () => {
       );
 
       const data = await response.json();
-      console.log("Fetched recruiter jobs data:", data);
-
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to fetch jobs");
-      }
+      console.log("Recruiter jobs response:", data);
 
       if (data.success && Array.isArray(data.jobs)) {
         dispatch(setAllJobs(data.jobs));
-      } else {
-        console.error("Invalid job data format or empty jobs array");
+        setFilterJobs(data.jobs);
       }
     } catch (error) {
-      console.error("Error fetching jobs:", error);
+      console.error("Error fetching recruiter jobs:", error);
     }
   };
 
@@ -114,10 +110,9 @@ const Jobs = () => {
     if (user?.role === "recruiter") {
       fetchJobs();
     } else {
-      // For students or other roles, fetch all jobs (or implement different logic)
       fetchAllJobs();
     }
-  }, [dispatch, user]);
+  }, [user]);
 
   const fetchAllJobs = async () => {
     try {
@@ -167,9 +162,9 @@ const Jobs = () => {
     }
     
     if (user?.role === "student") {
-      navigate(`/job/description/${jobId}`);
+      navigate(`/job/description/${jobId}`); // Updated path
     } else if (user?.role === "recruiter") {
-      navigate(`/job/details/${jobId}`);
+      navigate(`/job/details/${jobId}`); // Updated path
     }
   };
 
@@ -179,10 +174,11 @@ const Jobs = () => {
       navigate('/signup');
       return;
     }
-    if (e.target.textContent === "View Details") {
-      navigate(`/job/details/${jobId}`);
-    } else {
-      navigate(`/job/description/${jobId}`);
+    
+    if (user?.role === "student") {
+      navigate(`/job/description/${jobId}`); // Updated path
+    } else if (user?.role === "recruiter") {
+      navigate(`/job/details/${jobId}`); // Updated path
     }
   };
 

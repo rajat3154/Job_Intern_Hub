@@ -17,7 +17,7 @@ const notificationSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['follow', 'job', 'application', 'system', 'application_update'],
+    enum: ['follow', 'job', 'application', 'system'],
     required: true
   },
   title: {
