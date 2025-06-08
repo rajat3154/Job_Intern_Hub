@@ -18,16 +18,22 @@ const UpdateProfileDialog = ({ open, setOpen }) => {
     bio: user?.profile?.bio || "",
     skills: user?.profile?.skills?.join(", ") || "",
     file: null,
+    profilePhoto: null,
   });
-
   const handleChange = (e) => {
     const { name, value } = e.target;
     setInput((prev) => ({ ...prev, [name]: value }));
   };
-
+  
+  // Add to handlers
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
     setInput((prev) => ({ ...prev, file }));
+  };
+
+  const handleProfilePhotoChange = (e) => {
+    const photo = e.target.files?.[0];
+    setInput((prev) => ({ ...prev, profilePhoto: photo }));
   };
 
   const handleSubmit = async (e) => {
@@ -39,6 +45,7 @@ const UpdateProfileDialog = ({ open, setOpen }) => {
     formData.append("bio", input.bio);
     formData.append("skills", input.skills);
     if (input.file) formData.append("file", input.file);
+    if (input.profilePhoto) formData.append("profilePhoto", input.profilePhoto);
 
     try {
       setLoading(true);
@@ -115,24 +122,41 @@ const UpdateProfileDialog = ({ open, setOpen }) => {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
-            className="space-y-2"
+            className="flex flex-col sm:flex-row gap-4"
           >
-            <label className="text-sm font-medium text-gray-300">
-              Resume (PDF)
-            </label>
-            <div className="flex items-center gap-2">
+            {/* Resume Upload */}
+            <div className="flex-1">
+              <label className="text-sm font-medium text-gray-300 block mb-1">
+                Resume (PDF)
+              </label>
               <input
                 type="file"
-                name="file"
                 accept="application/pdf"
                 onChange={handleFileChange}
                 className="w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-600/50 file:text-white hover:file:bg-blue-600/70"
               />
-              {input.file && (
-                <span className="text-xs text-gray-400 truncate">
-                  {input.file.name}
-                </span>
-              )}
+              <span className="text-xs text-gray-400 block mt-1 truncate">
+                {input.file ? input.file.name : "No file chosen"}
+              </span>
+            </div>
+
+            {/* Profile Photo Upload */}
+            <div className="flex-1">
+              <label className="text-sm font-medium text-gray-300 block mb-1">
+                Profile Photo
+              </label>
+              <input
+                type="file"
+                name="profilePhoto"
+                accept="image/*"
+                onChange={handleProfilePhotoChange}
+                className="w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-purple-600/50 file:text-white hover:file:bg-purple-600/70"
+              />
+              <span className="text-xs text-gray-400 block mt-1 truncate">
+                {input.profilePhoto
+                  ? input.profilePhoto.name
+                  : "No file chosen"}
+              </span>
             </div>
           </motion.div>
 

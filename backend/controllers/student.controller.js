@@ -217,16 +217,12 @@ export const logout = async (req, res) => {
 export const updateProfile = async (req, res) => {
       try {
             const { fullname, email, phonenumber, bio, skills } = req.body;
-            const file = req.file;
+            const resumeFile = req.files?.file?.[0];
+            const photoFile = req.files?.profilePhoto?.[0];
 
-            console.log("Updating Profile for User ID:", req.user.id);
-
-            const user = await Student.findById(req.user.id);
+            const user = await Student.findById(req.user._id);
             if (!user) {
-                  return res.status(400).json({
-                        message: "User not found",
-                        success: false,
-                  });
+                  return res.status(400).json({ message: "User not found", success: false });
             }
 
             if (fullname) user.fullname = fullname;
@@ -235,11 +231,21 @@ export const updateProfile = async (req, res) => {
             if (bio) user.profile.bio = bio;
             if (skills) user.profile.skills = skills.split(",");
 
-            if (file) {
-                  const fileUri = getDataUri(file);
-                  const cloudResponse = await cloudinary.uploader.upload(fileUri.content);
+            if (resumeFile) {
+                  const fileUri = getDataUri(resumeFile);
+                  const cloudResponse = await cloudinary.uploader.upload(fileUri.content, {
+                        resource_type: "raw",
+                  });
                   user.profile.resume = cloudResponse.secure_url;
-                  user.profile.resumeOriginalName = file.originalname;
+                  user.profile.resumeOriginalName = resumeFile.originalname;
+            }
+
+            if (photoFile) {
+                  const photoUri = getDataUri(photoFile);
+                  const photoUpload = await cloudinary.uploader.upload(photoUri.content, {
+                        folder: "profile_photos",
+                  });
+                  user.profile.profilePhoto = photoUpload.secure_url;
             }
 
             await user.save();
@@ -256,7 +262,7 @@ export const updateProfile = async (req, res) => {
                   success: false,
             });
       }
-};
+    };
 export const getAllStudents = async (req, res) => {
       try {
             const students = await Student.find().sort({ createdAt: -1 });

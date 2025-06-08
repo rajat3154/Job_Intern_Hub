@@ -11,7 +11,7 @@ import {
       updateStatus,
 } from "../controllers/application.controller.js";
 const router = express.Router();
-router.route("/apply/:id").get(isAuthenticated, applyJob);
+router.route("/apply/:id").post(isAuthenticated, applyJob);
 router.route("/apply/intern/:id").post(isAuthenticated, applyInternship);
 router.route("/get").get(isAuthenticated, getAppliedJobs);
 router.route("/internships/get").get(isAuthenticated, getAppliedInternships);

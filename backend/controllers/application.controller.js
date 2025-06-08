@@ -8,9 +8,21 @@ import { Internship } from "../models/internship.model.js";
 export const applyJob = async (req, res) => {
       try {
             const jobId = req.params.id;
-            const userId = req.user._id; // Get user ID from authenticated request
+            const userId = req.user._id;
 
-            // Get the job details first
+            // Check if already applied
+            const existingApplication = await Application.findOne({
+                  job: jobId,
+                  applicant: userId
+            });
+
+            if (existingApplication) {
+                  return res.status(400).json({
+                        success: false,
+                        message: "You have already applied for this job"
+                  });
+            }
+
             const job = await Job.findById(jobId).populate('created_by');
             if (!job) {
                   return res.status(404).json({
@@ -19,16 +31,14 @@ export const applyJob = async (req, res) => {
                   });
             }
 
-            // Get student details for notification
             const student = await Student.findById(userId);
             if (!student) {
                   return res.status(404).json({
                         success: false,
-                        message: "Student not found"  
+                        message: "Student not found"
                   });
             }
 
-            // Create application with applicant field
             const application = await Application.create({
                   job: jobId,
                   applicant: userId,
@@ -36,12 +46,10 @@ export const applyJob = async (req, res) => {
                   ...req.body
             });
 
-            // Add application to job's applications array
             await Job.findByIdAndUpdate(jobId, {
                   $addToSet: { applications: application._id }
             });
 
-            // Create notification for recruiter
             const notification = await Notification.create({
                   recipient: job.created_by._id,
                   sender: userId,
@@ -50,10 +58,11 @@ export const applyJob = async (req, res) => {
                   title: 'New Job Application',
                   message: `${student.fullname} applied for "${job.title}"`,
                   read: false
-            });            // Get initialized socket instance and emit notification
+            });
+
             const io = getIO();
             if (io) {
-                io.to(job.created_by._id.toString()).emit('newNotification', notification);
+                  io.to(job.created_by._id.toString()).emit('newNotification', notification);
             }
 
             return res.status(201).json({
@@ -62,14 +71,14 @@ export const applyJob = async (req, res) => {
                   application
             });
       } catch (error) {
-            console.log(error);
+            console.error("Application error:", error);
             return res.status(500).json({
                   success: false,
                   message: "Failed to submit application",
                   error: error.message
             });
       }
-};
+    };
 export const applyInternship = async (req, res) => {
       try {
             const internshipId = req.params.id;
@@ -259,27 +268,55 @@ export const updateStatus = async (req, res) => {
       try {
             const { status } = req.body;
             const applicationId = req.params.id;
+
             if (!status) {
                   return res
                         .status(400)
                         .json({ message: "Status is required", success: false });
             }
-            const application = await Application.findById(applicationId);
+
+            // Find the application
+            const application = await Application.findById(applicationId)
+                  .populate("job")
+                  .populate("applicant");
+
             if (!application) {
                   return res
                         .status(404)
                         .json({ message: "Application not found", success: false });
             }
+
+            // Update status
             application.status = status.toLowerCase();
             await application.save();
+
+            // Create notification to send to the student
+            const notification = await Notification.create({
+                  recipient: application.applicant._id, // Send to student
+                  sender: application.job.created_by,   // Recruiter (assuming this is populated)
+                  senderModel: 'Recruiter',
+                  type: 'application',
+                  title: 'Application Status Updated',
+                  message: `Your application for "${application.job.title}" has been ${status.toLowerCase()}.`,
+                  read: false,
+            });
+
+            // Send notification through socket
+            const io = getIO();
+            if (io) {
+                  io.to(application.applicant._id.toString()).emit("newNotification", notification);
+            }
+
             return res
                   .status(200)
-                  .json({ message: "Status *updated successfully", success: true });
+                  .json({ message: "Status updated successfully", success: true });
+
       } catch (error) {
             console.log(error);
             return res.status(500).json({ message: "Server error", success: false });
       }
 };
+    
 export const updateInternshipStatus = async (req, res) => {
       try {
             const { status } = req.body;

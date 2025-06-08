@@ -12,7 +12,8 @@ import messageRoute from "./routes/message.route.js";
 import followRoute from "./routes/follow.routes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 import { createServer } from "http";
-import { initializeSocket } from "./socket/index.js";
+import { initSocket } from "./socket/socket.js";
+
 
 dotenv.config();
 const PORT = process.env.PORT || 8000;
@@ -20,7 +21,7 @@ const app = express();
 const server = createServer(app);
 
 // Initialize Socket.IO immediately after creating the server
-const io = initializeSocket(server);
+const io = initSocket(server);
 
 const corsOptions = {
     origin: ["http://localhost:5173"],

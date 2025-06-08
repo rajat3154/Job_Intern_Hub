@@ -1,7 +1,7 @@
 import { deleteRecruiter, getAllRecruiters, getRecruiterJobs, getRecruiterProfile, recregister } from "../controllers/recruiter.controller.js";
 import { deleteStudent, getAllStudents, isAdmin, login, logout, sregister, updateProfile } from "../controllers/student.controller.js";
 import express, { Router } from "express";
-import { singleUpload } from "../middlewares/multer.js";
+import {  upload } from "../middlewares/multer.js";
 import isAuthenticated from "../middlewares/isAuthenticated.js";
 import isaAdmin from "../middlewares/isAuthenticated.js";
 import { Student } from "../models/student.model.js";
@@ -70,8 +70,8 @@ router.route("/check-auth").get(isAuthenticated, async (req, res) => {
   
 
 // Student specific routes
-router.route("/student/signup").post(singleUpload, sregister);
-router.route("/student/profile/update").post(isAuthenticated, singleUpload, updateProfile);
+router.route("/student/signup").post(upload, sregister);
+router.route("/student/profile/update").post(isAuthenticated, upload, updateProfile);
 router.route('/student/students').get(isAuthenticated, getAllStudents);
 router.delete("/student/:id", isAuthenticated, isaAdmin, deleteStudent);
 
@@ -91,7 +91,7 @@ router.get("/student/:id", isAuthenticated, async (req, res) => {
 });
 
 // Recruiter routes
-router.route("/recruiter/signup").post(singleUpload, recregister);
+router.route("/recruiter/signup").post(upload, recregister);
 router.route("/recruiter/recruiters").get(isAuthenticated, getAllRecruiters);
 router.delete("/recruiter/:id", isAuthenticated, isaAdmin, deleteRecruiter);
 

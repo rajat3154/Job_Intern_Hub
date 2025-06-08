@@ -14,6 +14,7 @@ const JobDescription = () => {
   const { singleJob } = useSelector((store) => store.job);
   const { user } = useSelector((store) => store.auth);
   const [isApplied, setIsApplied] = useState(false);
+  const [isApplying, setIsApplying] = useState(false);
 
   console.log("📌 Job ID from URL:", jobId);
   console.log("👤 Logged-in user:", user);
@@ -53,32 +54,58 @@ const JobDescription = () => {
 
   // Handle Apply button click
   const applyJobHandler = async () => {
+    setIsApplying(true);
     console.log("🚀 Applying for job:", jobId);
     try {
-      const res = await axios.get(
-        `${APPLICATION_API_END_POINT}/apply/${jobId}`,
+    
+    
+      const res = await axios.post(
+        `${APPLICATION_API_END_POINT}/apply/${jobId}`,{},
         {
           withCredentials: true,
+         
         }
       );
+
       console.log("📝 Apply API response:", res.data);
+
       if (res.data.success) {
-        setIsApplied(true);
         toast.success(res.data.message);
 
-        // Update local Redux state
-        const updatedSingleJob = {
+        // Immediately update local state
+        setIsApplied(true);
+
+        // Optimistically update Redux state
+        const updatedJob = {
           ...singleJob,
           applications: [
             ...(singleJob.applications || []),
             { applicant: user._id },
           ],
         };
-        dispatch(setSingleJob(updatedSingleJob));
+        dispatch(setSingleJob(updatedJob));
       }
     } catch (error) {
       console.error("❌ Error applying for job:", error);
-      toast.error("Failed to apply for the job.");
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        console.error("Response data:", error.response.data);
+        console.error("Response status:", error.response.status);
+        console.error("Response headers:", error.response.headers);
+        toast.error(
+          error.response.data.message || "Failed to apply for the job."
+        );
+      } else if (error.request) {
+        // The request was made but no response was received
+        console.error("No response received:", error.request);
+        toast.error("No response from server. Please check your connection.");
+      } else {
+        // Something happened in setting up the request
+        console.error("Request setup error:", error.message);
+        toast.error("Failed to setup request.");
+      }
+    }finally{
+      setIsApplying(false);
     }
   };
 
@@ -94,16 +121,12 @@ const JobDescription = () => {
         {/* Job Title and Apply Button */}
         <div className="flex items-center justify-between mb-6 mr-7">
           <h1 className="text-3xl font-bold">{singleJob.title}</h1>
-          <Button
-            onClick={applyJobHandler}
-            disabled={isApplied}
-            className={`rounded-lg text-sm font-bold px-6 py-3 ${
-              isApplied
-                ? "bg-gray-600 cursor-not-allowed"
-                : "bg-[#7209b7] hover:bg-[#5f32ad]"
-            }`}
-          >
-            {isApplied ? "Already Applied" : "Apply Now"}
+          <Button onClick={applyJobHandler} disabled={isApplied || isApplying}>
+            {isApplying
+              ? "Applying..."
+              : isApplied
+              ? "Already Applied"
+              : "Apply Now"}
           </Button>
         </div>
 
