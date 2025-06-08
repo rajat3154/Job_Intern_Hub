@@ -16,6 +16,7 @@ import { useSocket } from "../context/SocketContext";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { Avatar, AvatarImage, AvatarFallback } from "./ui/avatar";
+import Navbar from "./shared/Navbar";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
@@ -146,102 +147,105 @@ const Notifications = () => {
   }
 
   return (
-    <div className="min-h-screen bg-black p-4">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="max-w-4xl mx-auto bg-black rounded-xl shadow-xl border border-gray-800 p-6"
-      >
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
-            Notifications
-          </h2>
-          <div className="flex items-center gap-2">
-            <Bell className="w-6 h-6 text-blue-400" />
-            <span className="bg-black text-white text-xs font-bold px-2 py-1 rounded-full">
-              {notifications.filter((n) => !n.read).length}
-            </span>
+    <>
+      <Navbar />
+      <div className="min-h-screen bg-black p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="max-w-4xl mx-auto bg-black rounded-xl shadow-xl border border-gray-800 p-6"
+        >
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+              Notifications
+            </h2>
+            <div className="flex items-center gap-2">
+              <Bell className="w-6 h-6 text-blue-400" />
+              <span className="bg-black text-white text-xs font-bold px-2 py-1 rounded-full">
+                {notifications.filter((n) => !n.read).length}
+              </span>
+            </div>
           </div>
-        </div>
 
-        <AnimatePresence>
-          {notifications.length === 0 ? (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-center text-gray-400 py-8"
-            >
-              <Bell className="w-12 h-12 mx-auto text-gray-600 mb-4" />
-              <p>No notifications yet</p>
-              <p className="text-sm text-gray-500 mt-2">
-                Your notifications will appear here
-              </p>
-            </motion.div>
-          ) : (
-            notifications.map((notification) => (
+          <AnimatePresence>
+            {notifications.length === 0 ? (
               <motion.div
-                key={notification._id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className={`mb-4 p-4 rounded-lg border ${
-                  notification.read
-                    ? "bg-black border-gray-800"
-                    : "bg-black border-blue-800 shadow-sm"
-                }`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-center text-gray-400 py-8"
               >
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0">
-                    <Avatar className="w-10 h-10 border border-gray-800">
-                      <AvatarImage
-                        src={notification.sender?.profile?.profilePhoto}
-                        alt={getSenderName(notification)}
-                      />
-                      <AvatarFallback className="bg-gray-900 text-gray-400">
-                        {getSenderName(notification)
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("")
-                          .toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                  </div>
-                  <div className="flex-grow">
-                    <h3 className="font-semibold text-gray-100">
-                      {notification.title}
-                    </h3>
-                    <p className="text-gray-400 mt-1">
-                      {notification.message}
-                    </p>
-                    <div className="mt-2 text-sm text-gray-500">
-                      {new Date(notification.createdAt).toLocaleDateString(
-                        "en-US",
-                        {
-                          day: "numeric",
-                          month: "short",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        }
-                      )}
-                    </div>
-                  </div>
-                  {!notification.read && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleMarkAsRead(notification._id)}
-                      className="flex-shrink-0 text-blue-400 hover:bg-blue-900/30"
-                    >
-                      Mark as read
-                    </Button>
-                  )}
-                </div>
+                <Bell className="w-12 h-12 mx-auto text-gray-600 mb-4" />
+                <p>No notifications yet</p>
+                <p className="text-sm text-gray-500 mt-2">
+                  Your notifications will appear here
+                </p>
               </motion.div>
-            ))
-          )}
-        </AnimatePresence>
-      </motion.div>
-    </div>
+            ) : (
+              notifications.map((notification) => (
+                <motion.div
+                  key={notification._id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className={`mb-4 p-4 rounded-lg border ${
+                    notification.read
+                      ? "bg-black border-gray-800"
+                      : "bg-black border-blue-800 shadow-sm"
+                  }`}
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="flex-shrink-0">
+                      <Avatar className="w-10 h-10 border border-gray-800">
+                        <AvatarImage
+                          src={notification.sender?.profile?.profilePhoto}
+                          alt={getSenderName(notification)}
+                        />
+                        <AvatarFallback className="bg-gray-900 text-gray-400">
+                          {getSenderName(notification)
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")
+                            .toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                    </div>
+                    <div className="flex-grow">
+                      <h3 className="font-semibold text-gray-100">
+                        {notification.title}
+                      </h3>
+                      <p className="text-gray-400 mt-1">
+                        {notification.message}
+                      </p>
+                      <div className="mt-2 text-sm text-gray-500">
+                        {new Date(notification.createdAt).toLocaleDateString(
+                          "en-US",
+                          {
+                            day: "numeric",
+                            month: "short",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          }
+                        )}
+                      </div>
+                    </div>
+                    {!notification.read && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleMarkAsRead(notification._id)}
+                        className="flex-shrink-0 text-blue-400 hover:bg-blue-900/30"
+                      >
+                        Mark as read
+                      </Button>
+                    )}
+                  </div>
+                </motion.div>
+              ))
+            )}
+          </AnimatePresence>
+        </motion.div>
+      </div>
+    </>
   );
 };
 

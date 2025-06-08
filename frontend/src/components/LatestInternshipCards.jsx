@@ -110,7 +110,7 @@ const LatestInternshipCards = ({ internship }) => {
 
         <div className="flex gap-3 mb-4 items-start">
           <img
-            src={profilePic}
+            src={internship?.createdAt?.profilePic || profilePic}
             alt={`${internship.companyname} Logo`}
             className="w-12 h-12 rounded-full object-cover"
           />

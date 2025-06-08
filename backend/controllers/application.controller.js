@@ -240,7 +240,47 @@ export const getApplicants = async (req, res) => {
             success: true,
       });
 };
+export const getInternshipApplicants = async (req, res) => {
+      const internship = await Internship.findById(req.params.id)
+            .populate({
+                  path: "applications",
+                  populate: {
+                        path: "applicant",
+                        model: "Student",
+                  },
+            });
+      return res.status(200).json({
+            internship,
+            applicants: internship.applications.map(app => app.applicant),
+            success: true,
+      });
+};
 export const updateStatus = async (req, res) => {
+      try {
+            const { status } = req.body;
+            const applicationId = req.params.id;
+            if (!status) {
+                  return res
+                        .status(400)
+                        .json({ message: "Status is required", success: false });
+            }
+            const application = await Application.findById(applicationId);
+            if (!application) {
+                  return res
+                        .status(404)
+                        .json({ message: "Application not found", success: false });
+            }
+            application.status = status.toLowerCase();
+            await application.save();
+            return res
+                  .status(200)
+                  .json({ message: "Status *updated successfully", success: true });
+      } catch (error) {
+            console.log(error);
+            return res.status(500).json({ message: "Server error", success: false });
+      }
+};
+export const updateInternshipStatus = async (req, res) => {
       try {
             const { status } = req.body;
             const applicationId = req.params.id;

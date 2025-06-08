@@ -6,6 +6,8 @@ import {
       getApplicants,
       getAppliedInternships,
       getAppliedJobs,
+      getInternshipApplicants,
+      updateInternshipStatus,
       updateStatus,
 } from "../controllers/application.controller.js";
 const router = express.Router();
@@ -14,6 +16,8 @@ router.route("/apply/intern/:id").post(isAuthenticated, applyInternship);
 router.route("/get").get(isAuthenticated, getAppliedJobs);
 router.route("/internships/get").get(isAuthenticated, getAppliedInternships);
 router.route("/status/:id/update").post(isAuthenticated, updateStatus);
+router.route("/internship/status/:id/update").post(isAuthenticated, updateInternshipStatus);
 router.route("/:id/applicants").get(isAuthenticated, getApplicants);
+router.route("/internship/:id/applicants").get(isAuthenticated, getInternshipApplicants);
 
 export default router;
