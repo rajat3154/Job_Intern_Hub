@@ -181,7 +181,48 @@ export const getAppliedJobs = async (req, res, next) => {
         next(error);
     }
 };
+export const getAppliedInternships = async (req, res, next) => {
+      try {
+            const userId = req.user._id;
 
+            const applications = await Application.find({ applicant: userId })
+                  .populate({
+                        path: 'internship',
+                        populate: {
+                              path: 'recruiter',
+                              select: 'companyname email profilePhoto'
+                        }
+                  })
+                  .sort({ createdAt: -1 });
+
+            // Format the response data
+            const formattedApplications = applications.map(app => ({
+                  _id: app._id,
+                  status: app.status,
+                  appliedAt: app.createdAt,
+                  internship: {
+                        _id: app.internship?._id,
+                        title: app.internship?.title,
+                        location: app.internship?.location,
+                        duration: app.internship?.duration,
+                        salary: app.internship?.salary,
+                        recruiter: {
+                              _id: app.internship?.recruiter?._id,
+                              companyname: app.internship?.recruiter?.companyname,
+                              profilePhoto: app.internship?.recruiter?.profilePhoto
+                        }
+                  }
+            }));
+
+            return res.status(200).json({
+                  success: true,
+                  applications: formattedApplications
+            });
+      } catch (error) {
+            console.error("Error fetching applied internships:", error);
+            next(error);
+      }
+    };
 
 export const getApplicants = async (req, res) => {
       const job = await Job.findById(req.params.id)

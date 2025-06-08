@@ -48,6 +48,8 @@ import {
   TableHeader,
   TableRow,
 } from "./ui/table";
+import { setAppliedInternships } from "@/redux/internshipSlice";
+
 
 const Profile = () => {
   const [open, setOpen] = useState(false);
@@ -60,7 +62,9 @@ const Profile = () => {
   const [followersLoading, setFollowersLoading] = useState(true);
   const [followingLoading, setFollowingLoading] = useState(true);
   const [appliedJobs, setAppliedJobs] = useState([]);
+  const [appliedInternships, setAppliedInternships] = useState([]);
   const [jobsLoading, setJobsLoading] = useState(true);
+  const [internshipsLoading, setInternshipsLoading] = useState(true);
   const { user: currentUser } = useSelector((store) => store.auth);
   const { userId, userType } = useParams();
   const navigate = useNavigate();
@@ -161,10 +165,28 @@ const Profile = () => {
       setJobsLoading(false);
     }
   };
+  const fetchAppliedInternships = async () => {
+    try {
+      setInternshipsLoading(true);
+      const response = await axios.get(
+        "http://localhost:8000/api/v1/application/internships/get",
+        { withCredentials: true }
+      );
 
+      if (response.data.success) {
+        setAppliedInternships(response.data.applications);
+      }
+    } catch (error) {
+      console.error("Error fetching applied internships:", error);
+      toast.error("Failed to load applied internships");
+    } finally {
+      setInternshipsLoading(false);
+    }
+  };
   useEffect(() => {
     if (currentUser?._id && currentUser?.role === "student") {
       fetchAppliedJobs();
+      fetchAppliedInternships();
     }
   }, [currentUser]);
 
@@ -622,19 +644,34 @@ const Profile = () => {
                             <Table>
                               <TableHeader>
                                 <TableRow>
-                                  <TableHead className="text-white py-3 px-4">Date</TableHead>
-                                  <TableHead className="text-white py-3 px-4">Job Role</TableHead>
-                                  <TableHead className="text-white py-3 px-4">Company</TableHead>
-                                  <TableHead className="text-white py-3 px-4 text-right">Status</TableHead>
+                                  <TableHead className="text-white py-3 px-4">
+                                    Date
+                                  </TableHead>
+                                  <TableHead className="text-white py-3 px-4">
+                                    Job Role
+                                  </TableHead>
+                                  <TableHead className="text-white py-3 px-4">
+                                    Company
+                                  </TableHead>
+                                  <TableHead className="text-white py-3 px-4 text-right">
+                                    Status
+                                  </TableHead>
                                 </TableRow>
                               </TableHeader>
                               <TableBody>
                                 {appliedJobs.map((app) => (
-                                  <TableRow key={app._id} className="hover:bg-blue-700 transition-all duration-200 text-white">
+                                  <TableRow
+                                    key={app._id}
+                                    className="hover:bg-blue-700 transition-all duration-200 text-white"
+                                  >
                                     <TableCell className="py-3 px-4">
-                                      {new Date(app.createdAt).toLocaleDateString()}
+                                      {new Date(
+                                        app.createdAt
+                                      ).toLocaleDateString()}
                                     </TableCell>
-                                    <TableCell className="py-3 px-4">{app.job?.title}</TableCell>
+                                    <TableCell className="py-3 px-4">
+                                      {app.job?.title}
+                                    </TableCell>
                                     <TableCell className="py-3 px-4">
                                       {app.job?.created_by?.companyname}
                                     </TableCell>
@@ -664,12 +701,110 @@ const Profile = () => {
                       </div>
                     </>
                   )}
+                  {isOwnProfile && isStudent && (
+                    <>
+                      <Separator className="bg-gray-800 my-3" />
+                      <div className="mb-3">
+                        <h2 className="text-sm font-semibold text-blue-400 mb-2 flex items-center gap-1">
+                          <Briefcase className="h-3 w-3" />
+                          Applied Internships
+                        </h2>
+                        {internshipsLoading ? (
+                          <div className="flex justify-center items-center h-16">
+                            <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+                          </div>
+                        ) : appliedInternships.length > 0 ? (
+                          <div className="max-h-[300px] overflow-y-auto">
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead className="text-white py-3 px-4">
+                                    Date
+                                  </TableHead>
+                                  <TableHead className="text-white py-3 px-4">
+                                    Internship
+                                  </TableHead>
+                                  <TableHead className="text-white py-3 px-4">
+                                    Company
+                                  </TableHead>
+                                  <TableHead className="text-white py-3 px-4">
+                                    Duration
+                                  </TableHead>
+                                  <TableHead className="text-white py-3 px-4 text-right">
+                                    Status
+                                  </TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {appliedInternships.map((app) => (
+                                  <TableRow
+                                    key={app._id}
+                                    className="hover:bg-blue-700 transition-all duration-200 text-white"
+                                    onClick={() =>
+                                      navigate(
+                                        `/internship/details/${app.internship?._id}`
+                                      )
+                                    }
+                                  >
+                                    <TableCell className="py-3 px-4">
+                                      {new Date(
+                                        app.appliedAt
+                                      ).toLocaleDateString()}
+                                    </TableCell>
+                                    <TableCell className="py-3 px-4">
+                                      {app.internship?.title}
+                                    </TableCell>
+                                    <TableCell className="py-3 px-4">
+                                      <div className="flex items-center gap-2">
+                                        <Avatar className="h-6 w-6">
+                                          <AvatarImage
+                                            src={
+                                              app.internship?.recruiter
+                                                ?.profilePhoto
+                                            }
+                                          />
+                                          <AvatarFallback>
+                                            {app.internship?.recruiter?.companyname?.charAt(
+                                              0
+                                            )}
+                                          </AvatarFallback>
+                                        </Avatar>
+                                        {app.internship?.recruiter?.companyname}
+                                      </div>
+                                    </TableCell>
+                                    <TableCell className="py-3 px-4">
+                                      {app.internship?.duration} months
+                                    </TableCell>
+                                    <TableCell className="py-3 px-4 text-right">
+                                      <Badge
+                                        className={`${
+                                          app.status === "rejected"
+                                            ? "bg-red-400 text-white"
+                                            : app.status === "pending"
+                                            ? "bg-gray-400 text-white"
+                                            : "bg-green-400 text-white"
+                                        } py-1 px-3 rounded-full`}
+                                      >
+                                        {app.status.toUpperCase()}
+                                      </Badge>
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-white">
+                            You haven't applied to any internships yet.
+                          </p>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </CardContent>
               </Card>
             </motion.div>
           </div>
-
-          
         </div>
       </div>
 

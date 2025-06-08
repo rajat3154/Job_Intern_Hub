@@ -23,7 +23,7 @@ const internshipSlice = createSlice({
             setSearchInternshipByText: (state, action) => {
                   state.searchInternshipByText = action.payload;
             },
-            setAllAppliedInternships: (state, action) => {
+            setAppliedInternships: (state, action) => {
                   state.allAppliedInternships = action.payload;
             },
             setSearchedQuery: (state, action) => {
@@ -33,7 +33,7 @@ const internshipSlice = createSlice({
 });
 
 // Export actions for use in components
-export const { setAllInternships, setSingleInternship, setAllAdminInternships, setSearchInternshipByText, setAllAppliedInternships, setSearchedQuery } =
+export const { setAllInternships, setSingleInternship, setAllAdminInternships, setSearchInternshipByText, setAppliedInternships, setSearchedQuery } =
       internshipSlice.actions;
 
 // Export the reducer to include in the Redux store
