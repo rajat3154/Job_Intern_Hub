@@ -1,4 +1,5 @@
 import { Internship } from "../models/internship.model.js"; // Adjust path if needed
+import { Student } from "../models/student.model.js";
 
 
 
@@ -187,6 +188,74 @@ export const getLatestInternships = async (req, res) => {
             res.status(500).json({
                   success: false,
                   message: "Failed to fetch latest internships"
+            });
+      }
+};
+export const isInternshipSaved = async (req, res) => {
+      try {
+            const internshipId = req.params.id;
+            const userId = req.user._id;
+
+            const student = await Student.findById(userId);
+            if (!student) {
+                  return res.status(404).json({
+                        success: false,
+                        message: "Student not found"
+                  });
+            }
+
+            const isSaved = student.savedInternships.includes(internshipId);
+            return res.status(200).json({
+                  success: true,
+                  isSaved
+            });
+      } catch (error) {
+            console.error("Error checking saved internship status:", error);
+            return res.status(500).json({
+                  success: false,
+                  message: "Error checking saved status"
+            });
+      }
+};
+
+export const saveInternship = async (req, res) => {
+      try {
+            const internshipId = req.params.id;
+            const userId = req.user._id;
+
+            const student = await Student.findById(userId);
+            if (!student) {
+                  return res.status(404).json({
+                        success: false,
+                        message: "Student not found"
+                  });
+            }
+
+            const isAlreadySaved = student.savedInternships.includes(internshipId);
+            if (isAlreadySaved) {
+                  // If already saved, remove it (unsave)
+                  student.savedInternships = student.savedInternships.filter(id => id.toString() !== internshipId);
+                  await student.save();
+                  return res.status(200).json({
+                        success: true,
+                        isSaved: false,
+                        message: "Internship unsaved successfully"
+                  });
+            } else {
+                  // If not saved, add it
+                  student.savedInternships.push(internshipId);
+                  await student.save();
+                  return res.status(200).json({
+                        success: true,
+                        isSaved: true,
+                        message: "Internship saved successfully"
+                  });
+            }
+      } catch (error) {
+            console.error("Error saving/unsaving Internship:", error);
+            return res.status(500).json({
+                  success: false,
+                  message: "Error saving/unsaving Internship"
             });
       }
 };

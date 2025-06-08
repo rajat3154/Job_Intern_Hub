@@ -56,6 +56,10 @@ const studentSchema = new mongoose.Schema({
       savedJobs: [{
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Job'
+      }],
+      savedInternships: [{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Internship'
       }]
 }, { timestamps: true })
 
