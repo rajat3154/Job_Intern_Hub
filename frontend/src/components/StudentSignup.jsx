@@ -48,8 +48,9 @@ const StudentSignup = () => {
     formData.append("status", input.status);
 
     if (input.file) {
-      formData.append("file", input.file);
+      formData.append("profilePhoto", input.file); 
     }
+    
 
     try {
       dispatch(setLoading(true));

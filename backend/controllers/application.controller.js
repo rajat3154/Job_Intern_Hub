@@ -325,7 +325,7 @@ export const updateStatus = async (req, res) => {
       }
 };
     
-export const updateInternshipStatus = async (req, res) => {
+export const updateStatusInternship = async (req, res) => {
       try {
             const { status } = req.body;
             const applicationId = req.params.id;
@@ -334,19 +334,46 @@ export const updateInternshipStatus = async (req, res) => {
                         .status(400)
                         .json({ message: "Status is required", success: false });
             }
-            const application = await Application.findById(applicationId);
+
+            // Find the application
+            const application = await Application.findById(applicationId)
+                  .populate("internship")
+                  .populate("applicant");
+
             if (!application) {
                   return res
                         .status(404)
                         .json({ message: "Application not found", success: false });
             }
+
+            // Update status
             application.status = status.toLowerCase();
             await application.save();
+
+            // Create notification to send to the student
+            const notification = await Notification.create({
+                  recipient: application.applicant._id, // Send to student
+                  sender: application.internship.created_by,   // Recruiter (assuming this is populated)
+                  senderModel: 'Recruiter',
+                  type: 'application',
+                  title: 'Application Status Updated',
+                  message: `Your application for "${application.internship.title}" has been ${status.toLowerCase()}.`,
+                  read: false,
+            });
+
+            // Send notification through socket
+            const io = getIO();
+            if (io) {
+                  io.to(application.applicant._id.toString()).emit("newNotification", notification);
+            }
+
             return res
                   .status(200)
-                  .json({ message: "Status *updated successfully", success: true });
+                  .json({ message: "Status updated successfully", success: true });
+
       } catch (error) {
             console.log(error);
             return res.status(500).json({ message: "Server error", success: false });
       }
 };
+    

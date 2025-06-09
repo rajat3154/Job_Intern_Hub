@@ -9,7 +9,7 @@ router.route("/recruiter").get(isAuthenticated, getInternshipsByRecruiter);
 router.route("/get").get(async (req, res) => {
   try {
     const internships = await Internship.find()
-      .populate("created_by", "companyname email profile")
+      .populate("recruiter", "companyname email profile")
       .sort({ createdAt: -1 });
 
     res.status(200).json({

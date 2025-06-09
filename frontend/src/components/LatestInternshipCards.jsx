@@ -88,21 +88,22 @@ const LatestInternshipCards = ({ internship }) => {
       <div className="absolute top-3 right-3 flex gap-2 z-10">
         <Button
           onClick={handleViewDetails}
-          className="px-3 py-1 h-8 bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold rounded-lg"
+          className="px-3 py-1 bg-purple-800 border-purple-500 text-white text-sm font-bold rounded-md hover:bg-purple-600 cursor-pointer"
         >
           View Details
         </Button>
         <Button
-          onClick={handleSaveInternship}
-          className={`px-3 py-1 h-8 text-xs font-semibold rounded-lg flex items-center gap-1 ${
-            isSaved
-              ? "bg-blue-600 hover:bg-blue-700"
-              : "bg-gray-700 hover:bg-gray-600"
-          }`}
-        >
-          {isSaved ? <BookmarkCheck size={14} /> : <Bookmark size={14} />}
-          {isSaved ? "Saved" : "Save"}
-        </Button>
+                 onClick={handleSaveInternship}
+                 variant="outline"
+                 className={`px-3 py-1 text-sm font-bold rounded-md flex items-center gap-2 ${
+                   isSaved
+                     ? "bg-blue-500 hover:bg-blue-600 text-black "
+                     : "bg-black hover:bg-gray-700"
+                 }`}
+               >
+                 {isSaved ? <BookmarkCheck size={16} /> : <Bookmark size={16} />}
+                 {isSaved ? "Saved" : "Save Internship"}
+               </Button>
       </div>
 
       {/* Card Content */}

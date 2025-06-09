@@ -48,8 +48,9 @@ const InternshipDetails = () => {
   const handleStatusUpdate = async (status, appId) => {
     try {
       setLoading(true);
+      console.log(appId);
       const res = await axios.post(
-        `${APPLICATION_API_END_POINT}/status/${appId}/update`,
+        `http://localhost:8000/api/v1/application/intern/status/${appId}/update`,
         { status },
         { withCredentials: true }
       );
@@ -209,8 +210,8 @@ const InternshipDetails = () => {
                           )}
                         </td>
                         <td>
-                          {app.appliedDate
-                            ? new Date(app.appliedDate).toLocaleDateString()
+                          {app.createdAt
+                            ? new Date(app.createdAt).toLocaleDateString()
                             : "N/A"}
                         </td>
                         <td className="relative">

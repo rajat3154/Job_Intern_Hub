@@ -139,23 +139,7 @@ const RecruiterProfile = () => {
         >
           View Details
         </Button>
-        <Button
-          onClick={(e) => handleSaveJob(e, job._id)}
-          size="sm"
-          variant="outline"
-          className={`${
-            isSaved && currentJobId === job._id
-              ? "bg-blue-600 hover:bg-blue-700"
-              : "bg-gray-800 hover:bg-gray-700"
-          }`}
-        >
-          {isSaved && currentJobId === job._id ? (
-            <BookmarkCheck size={16} className="mr-2" />
-          ) : (
-            <Bookmark size={16} className="mr-2" />
-          )}
-          Save
-        </Button>
+     
       </div>
 
       <div className="mt-12">

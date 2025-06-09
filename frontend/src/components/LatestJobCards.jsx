@@ -37,11 +37,11 @@ const LatestJobCards = ({ job, onDetails, onSave }) => {
       }}
     >
       {/* Action Buttons */}
-      <div className="absolute top-3 right-4 flex gap-2">
+      <div className="absolute top-3 right-3 right-4 flex gap-2">
         <Button
           onClick={handleViewDetailsClick}
           variant="outline"
-          className="px-3 py-1 bg-purple-500 border-purple-500 text-white text-sm font-bold rounded-md hover:bg-purple-600 cursor-pointer"
+          className="px-3 py-1 bg-purple-800 border-purple-500 text-white text-sm font-bold rounded-md hover:bg-purple-600 cursor-pointer"
         >
           View Details
         </Button>
@@ -50,8 +50,8 @@ const LatestJobCards = ({ job, onDetails, onSave }) => {
           variant="outline"
           className={`px-3 py-1 text-sm font-bold rounded-md flex items-center gap-2 ${
             isSaved
-              ? "bg-blue-500 hover:bg-blue-600"
-              : "bg-gray-600 hover:bg-gray-700"
+              ? "bg-blue-500 hover:bg-blue-600 text-black"
+              : "bg-black hover:bg-gray-700"
           }`}
         >
           {isSaved ? <BookmarkCheck size={16} /> : <Bookmark size={16} />}

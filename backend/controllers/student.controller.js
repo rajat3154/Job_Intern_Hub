@@ -7,52 +7,14 @@ import cloudinary from "../utils/cloudinary.js";
 export const sregister = async (req, res) => {
       try {
             const { fullname, email, phonenumber, password, role, status } = req.body;
-            console.log(fullname, email, phonenumber, password, role, status);
-
+            console.log("req.files:", req.files);
+            console.log("req.body:", req.body);
             if (!fullname || !email || !phonenumber || !password || !status || !role) {
                   return res.status(400).json({
                         message: "All fields are required",
                         success: false
                   });
             }
-            if (req.file) {
-
-                  if (role !== "student") {
-                        return res.status(400).json({
-                              message: "Invalid role",
-                              success: false
-                        });
-                  }
-
-                  const file = req.file;
-                  const fileUri = getDataUri(file);
-                  const cloudResponse = await cloudinary.uploader.upload(fileUri.content);
-                  const studentExists = await Student.findOne({ email });
-                  if (studentExists) {
-                        return res.status(400).json({
-                              message: "Email already exists",
-                              success: false
-                        });
-                  }
-
-                  const hashedPassword = await bcrypt.hash(password, 10);
-                  await Student.create({
-                        fullname,
-                        email,
-                        phonenumber,
-                        password: hashedPassword,
-                        role: 'student',
-                        status,
-                        profile: {
-                              profilePhoto: cloudResponse.secure_url,
-                        }
-                  });
-                  res.status(201).json({
-                        message: "Account created successfully",
-                        success: true
-                  });
-            }
-        
 
             if (role !== "student") {
                   return res.status(400).json({
@@ -61,7 +23,7 @@ export const sregister = async (req, res) => {
                   });
             }
 
-
+            // Check if student already exists
             const studentExists = await Student.findOne({ email });
             if (studentExists) {
                   return res.status(400).json({
@@ -70,17 +32,30 @@ export const sregister = async (req, res) => {
                   });
             }
 
+            // Hash the password
             const hashedPassword = await bcrypt.hash(password, 10);
-            await Student.create({
+
+            // Prepare student data
+            const studentData = {
                   fullname,
                   email,
                   phonenumber,
                   password: hashedPassword,
-                  role: 'student',
+                  role,
                   status,
-                 
+                  profile: {}
+            };
 
-            });
+            // If file is present, upload to cloudinary
+            if (req.file) {
+                  const file = req.file;
+                  const fileUri = getDataUri(file);
+                  const cloudResponse = await cloudinary.uploader.upload(fileUri.content);
+                  studentData.profile.profilePhoto = cloudResponse.secure_url;
+            }
+
+            // Create student
+            await Student.create(studentData);
 
             res.status(201).json({
                   message: "Account created successfully",
@@ -96,7 +71,7 @@ export const sregister = async (req, res) => {
             });
       }
 };
-
+    
 
 
 
