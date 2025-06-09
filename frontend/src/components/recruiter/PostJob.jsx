@@ -33,7 +33,15 @@ const PostJob = ({ onClose, onSuccess }) => {
     try {
       setLoading(true);
 
-      const res = await axios.post(`${JOB_API_END_POINT}/post`, input, {
+      const payload = {
+        ...input,
+        requirements: input.requirements
+          .split(",")
+          .map((req) => req.trim())
+          .filter(Boolean),
+      };
+
+      const res = await axios.post(`${JOB_API_END_POINT}/post`, payload, {
         headers: {
           "Content-Type": "application/json",
         },
@@ -45,6 +53,7 @@ const PostJob = ({ onClose, onSuccess }) => {
         onSuccess();
       }
     } catch (error) {
+      console.error("Axios error:", error);
       toast.error(error.response?.data?.message || "An error occurred");
     } finally {
       setLoading(false);
