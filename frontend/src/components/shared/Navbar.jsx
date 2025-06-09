@@ -56,7 +56,7 @@ const Navbar = () => {
                     to="/discover"
                     className="hover:text-white transition duration-300 cursor-pointer"
                   >
-                    Discover
+                    Peoples
                   </Link>
                 </li>
                 <li>
@@ -92,7 +92,7 @@ const Navbar = () => {
                     to="/discover"
                     className="hover:text-white transition duration-300 cursor-pointer"
                   >
-                    Discover
+                    Peoples
                   </Link>
                 </li>
                 <li>
