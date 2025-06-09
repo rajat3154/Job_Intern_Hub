@@ -4,53 +4,44 @@ import  {Recruiter}  from "../models/recruiter.model.js";
 
 export const postJob = async (req, res) => {
       try {
-            // Destructure the job details from the request body
             const { title, description, requirements, salary, location, jobType, experience, position } = req.body;
-
-            // Get the recruiter ID from the logged-in user's information
-            const recruiterId = req.user.id; // Assume the user is a recruiter and has `id` field
-            console.log(recruiterId);  // For debugging: log recruiter ID
-
-            // Fetch recruiter details using the recruiter ID
+            const recruiterId = req.user._id;
+            console.log("Recruiter ID:", recruiterId); 
             const recruiter = await Recruiter.findById(recruiterId);
-
-            // If recruiter is not found, return an error message
             if (!recruiter) {
                   return res.status(404).json({
                         message: "Recruiter not found",
-                        success: false
+                        success: false,
                   });
             }
-
-            // Create a new job post with the recruiter’s company name and recruiter ID
             const job = await Job.create({
                   title,
                   description,
-                  requirements: Array.isArray(requirements) ? requirements : [requirements], // Ensure requirements are an array
-                  salary: Number(salary),  // Ensure salary is a number
+                  requirements: Array.isArray(requirements) ? requirements : [requirements],
+                  salary: Number(salary),
                   location,
                   jobType,
                   experience,
                   position,
-                  company: recruiter.companyname, // Store company name from the recruiter model
-                  created_by: recruiterId // Link the job post to the recruiter
+                  company: recruiter.companyname,
+                  created_by: recruiterId,
             });
-
-            // Return a success response with the newly created job
             return res.status(201).json({
                   message: "Job posted successfully",
                   success: true,
-                  job
+                  job,
             });
-
       } catch (error) {
-            console.error(error); // Log the error for debugging
+            try {
+                  console.error("Job Post Error:", error);
+            } catch (_) { }
             return res.status(500).json({
                   message: "Server error",
-                  success: false
+                  success: false,
             });
       }
 };
+    
 
 
 

@@ -93,12 +93,40 @@ const RecruiterProfile = () => {
   }, [currentUser._id]);
 
   const handleJobPosted = () => {
-    fetchAllData();
+    // Remove fetchAllData() and instead refetch the specific data
+    const fetchJobs = async () => {
+      try {
+        const jobsRes = await axios.get(
+          "http://localhost:8000/api/v1/job/recruiter",
+          { withCredentials: true }
+        );
+        setPostedJobs(jobsRes.data.jobs || []);
+      } catch (error) {
+        console.error("Error fetching jobs:", error);
+        toast.error("Failed to load jobs");
+      }
+    };
+    fetchJobs();
     setShowPostJob(false);
   };
 
   const handleInternshipPosted = () => {
-    fetchAllData();
+    // Remove fetchAllData() and instead refetch the specific data
+    const fetchInternships = async () => {
+      try {
+        const internshipsRes = await axios.get(
+          "http://localhost:8000/api/v1/internship/recruiter",
+          { withCredentials: true }
+        );
+        setInternships(
+          internshipsRes.data.internships || internshipsRes.data || []
+        );
+      } catch (error) {
+        console.error("Error fetching internships:", error);
+        toast.error("Failed to load internships");
+      }
+    };
+    fetchInternships();
     setShowPostInternship(false);
   };
 
@@ -139,7 +167,6 @@ const RecruiterProfile = () => {
         >
           View Details
         </Button>
-     
       </div>
 
       <div className="mt-12">
@@ -186,7 +213,7 @@ const RecruiterProfile = () => {
       </div>
     </motion.div>
   );
-  
+
   const renderInternshipCard = (internship) => (
     <motion.div
       key={internship._id}
@@ -249,7 +276,7 @@ const RecruiterProfile = () => {
       </div>
     </motion.div>
   );
-  
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-950">
@@ -508,14 +535,15 @@ const RecruiterProfile = () => {
                       <h3 className="text-xl font-semibold text-gray-300">
                         No Jobs Posted Yet
                       </h3>
-                      <p className="text-gray-500">
-                        Start attracting talent by posting your first job
-                        opening
+                      <p className="text-gray-400">
+                        Start by posting your first job to find the right
+                        candidates.
                       </p>
                       <Button
                         onClick={() => setShowPostJob(true)}
-                        className="bg-blue-600 hover:bg-blue-700 mt-4"
+                        className="bg-blue-600 hover:bg-blue-700"
                       >
+                        <PlusCircle className="mr-2" size={16} />
                         Post a Job
                       </Button>
                     </div>
@@ -526,18 +554,18 @@ const RecruiterProfile = () => {
 
             <TabsContent value="internships" className="mt-0">
               {internshipsLoading ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
-                  {[...Array(3)].map((_, i) => (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4">
+                  {[...Array(2)].map((_, i) => (
                     <div
                       key={i}
-                      className="h-64 w-full rounded-xl bg-gray-900/80 animate-pulse"
+                      className="h-20 w-full rounded-xl bg-gray-900/80 animate-pulse"
                     />
                   ))}
                 </div>
               ) : internships.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
-                  {internships.map((internship, i) => (
-                    <div key={i} className="w-full">
+                  {internships.map((internship) => (
+                    <div key={internship._id}>
                       {renderInternshipCard(internship)}
                     </div>
                   ))}
@@ -545,7 +573,14 @@ const RecruiterProfile = () => {
                     <div
                       className="flex items-center justify-center p-6 rounded-xl bg-gray-900 border border-dashed border-gray-700 hover:border-blue-500 cursor-pointer transition-all duration-300 w-full"
                       onClick={() => navigate("/recruiter/internships")}
-                    ></div>
+                    >
+                      <div className="text-center">
+                        <p className="text-gray-400 mb-2">
+                          View all {internships.length} internships
+                        </p>
+                        <Button variant="outline">See More</Button>
+                      </div>
+                    </div>
                   )}
                 </div>
               ) : (
@@ -554,16 +589,18 @@ const RecruiterProfile = () => {
                     <div className="mx-auto max-w-md space-y-4">
                       <FileText className="h-12 w-12 mx-auto text-gray-600" />
                       <h3 className="text-xl font-semibold text-gray-300">
-                        No Internships Posted
+                        No Internships Posted Yet
                       </h3>
-                      <p className="text-gray-500">
-                        Create internship opportunities to discover young talent
+                      <p className="text-gray-400">
+                        Share internship opportunities and connect with early
+                        talent.
                       </p>
                       <Button
                         onClick={() => setShowPostInternship(true)}
-                        className="bg-blue-600 hover:bg-blue-700 mt-4"
+                        className="bg-blue-600 hover:bg-blue-700"
                       >
-                        Post an Internship
+                        <PlusCircle className="mr-2" size={16} />
+                        Post Internship
                       </Button>
                     </div>
                   </CardContent>

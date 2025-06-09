@@ -217,15 +217,7 @@ const Jobs = () => {
       )}
 
       <div className="container mx-auto flex gap-6 px-4 flex-1">
-        {user?.role === "student" && (
-          <div className="w-1/5 bg-black p-6 rounded-lg shadow-lg border border-gray-700 h-fit">
-            <h2 className="text-lg font-semibold text-blue-400 mb-4">
-              Filter Jobs
-            </h2>
-            <FilterCard />
-          </div>
-        )}
-
+        
         <div
           className={`${
             user?.role === "student" ? "flex-1" : "w-full"

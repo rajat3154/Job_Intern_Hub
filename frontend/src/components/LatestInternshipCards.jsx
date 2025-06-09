@@ -116,13 +116,13 @@ const LatestInternshipCards = ({ internship }) => {
         {/* Company Info */}
         <div className="flex gap-3 mb-4">
           <img
-            src={internship?.created_by?.profile?.profilePhoto || profilePic}
+            src={internship?.recruiter?.profile?.profilePhoto || profilePic}
             alt="Company Logo"
             className="w-10 h-10 rounded-full object-cover border border-gray-600"
           />
           <div className="text-left">
             <h2 className="text-base font-semibold line-clamp-1">
-              {internship?.created_by?.companyname || "Company Name"}
+              {internship?.recruiter?.companyname || "Company Name"}
             </h2>
             <p className="text-xs text-gray-400">
               {internship.location || "Location not specified"}

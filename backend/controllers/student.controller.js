@@ -7,8 +7,8 @@ import cloudinary from "../utils/cloudinary.js";
 export const sregister = async (req, res) => {
       try {
             const { fullname, email, phonenumber, password, role, status } = req.body;
-            console.log("req.files:", req.files);
-            console.log("req.body:", req.body);
+
+            // Check required fields
             if (!fullname || !email || !phonenumber || !password || !status || !role) {
                   return res.status(400).json({
                         message: "All fields are required",
@@ -16,6 +16,7 @@ export const sregister = async (req, res) => {
                   });
             }
 
+            // Role validation
             if (role !== "student") {
                   return res.status(400).json({
                         message: "Invalid role",
@@ -24,15 +25,15 @@ export const sregister = async (req, res) => {
             }
 
             // Check if student already exists
-            const studentExists = await Student.findOne({ email });
-            if (studentExists) {
+            const existingStudent = await Student.findOne({ email });
+            if (existingStudent) {
                   return res.status(400).json({
                         message: "Email already exists",
                         success: false
                   });
             }
 
-            // Hash the password
+            // Hash password
             const hashedPassword = await bcrypt.hash(password, 10);
 
             // Prepare student data
@@ -41,14 +42,15 @@ export const sregister = async (req, res) => {
                   email,
                   phonenumber,
                   password: hashedPassword,
-                  role,
+                  role: "student",
                   status,
                   profile: {}
             };
 
-            // If file is present, upload to cloudinary
-            if (req.file) {
-                  const file = req.file;
+            // Handle optional profile photo
+            if (req.files && req.files.profilePhoto && req.files.profilePhoto.length > 0) {
+                  const file = req.files.profilePhoto[0];
+                
                   const fileUri = getDataUri(file);
                   const cloudResponse = await cloudinary.uploader.upload(fileUri.content);
                   studentData.profile.profilePhoto = cloudResponse.secure_url;
@@ -57,13 +59,13 @@ export const sregister = async (req, res) => {
             // Create student
             await Student.create(studentData);
 
-            res.status(201).json({
+            return res.status(201).json({
                   message: "Account created successfully",
-                  success: true
+                  success: true,
             });
 
       } catch (error) {
-            console.error("Error in register", error);
+            console.error("Error in sregister:", error);
             return res.status(500).json({
                   message: "Internal server error",
                   success: false,
@@ -71,6 +73,7 @@ export const sregister = async (req, res) => {
             });
       }
 };
+    
     
 
 

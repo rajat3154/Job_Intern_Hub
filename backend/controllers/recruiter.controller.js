@@ -16,13 +16,15 @@ export const recregister = async (req, res) => {
                         success: false
                   });
             }
-            if (!req.file) {
+            if (!req.files || !req.files.file || req.files.file.length === 0) {
                   return res.status(400).json({
                         message: "Profile photo is required",
-                        success: false
+                        success: false,
                   });
             }
-            const file = req.file;
+
+            // ✅ Access the file
+            const file = req.files.file[0];
             const fileUri = getDataUri(file);
             const cloudResponse = await cloudinary.uploader.upload(fileUri.content);
             if (role !== "recruiter") {
@@ -34,7 +36,7 @@ export const recregister = async (req, res) => {
             // Check for existing recruiters
             const existingRequest = await RecruiterRequest.findOne({ email });
             const recruiterExists = await Recruiter.findOne({ email });
-            if (recruiterExists|| existingRequest) {
+            if (recruiterExists) {
                   return res.status(400).json({
                         message: "Email already exists",
                         success: false
