@@ -65,7 +65,7 @@ export const getAllJobs = async (req, res) => {
             };
 
           const jobs = await Job.find(query)
-  .populate({ path: "created_by", select: "companyname email companyaddress companystatus" }) // ✅ changed recruiter ➝ created_by
+  .populate({ path: "created_by", select: "companyname email companyaddress companystatus profile" }) // ✅ changed recruiter ➝ created_by
   .sort({ createdAt: -1 });
 
 
@@ -140,8 +140,9 @@ export const getRecruiterJobs = async (req, res) => {
 export const getLatestJobs = async (req, res) => {
       try {
             const latestJobs = await Job.find()
+                  .populate('created_by', 'companyname profile') // Recruiter name and profile
                   .sort({ createdAt: -1 }) // Sort by newest first
-                  .limit(5); // Fetch only top 6
+                  .limit(5); // Fetch only top 5
 
             res.status(200).json({ success: true, jobs: latestJobs });
       } catch (error) {
@@ -149,7 +150,7 @@ export const getLatestJobs = async (req, res) => {
             res.status(500).json({ success: false, message: "Internal Server Error" });
       }
 };
-
+  
 export const isJobSaved = async (req, res) => {
       try {
             const jobId = req.params.id;

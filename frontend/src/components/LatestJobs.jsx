@@ -18,6 +18,7 @@ const LatestJobs = ({ query }) => {
       });
 
       const data = await response.json();
+      console.log("Latest Jobs Data:", data);
       if (data.success && Array.isArray(data.jobs)) {
         setLatestJobs(data.jobs);
       } else {

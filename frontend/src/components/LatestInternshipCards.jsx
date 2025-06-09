@@ -67,7 +67,7 @@ const LatestInternshipCards = ({ internship }) => {
     }
   };
 
-  const handleButtonClick = (e) => {
+  const handleViewDetails = (e) => {
     e.stopPropagation();
     if (!user) {
       navigate("/signup");
@@ -77,91 +77,112 @@ const LatestInternshipCards = ({ internship }) => {
   };
 
   return (
-    <div className="w-full p-6 rounded-lg shadow-lg bg-black text-white border border-blue-500 hover:bg-gray-800 cursor-pointer transition duration-300 flex flex-col h-full relative">
-      {/* Top Right Buttons */}
-      <div className="absolute top-3 right-4 flex gap-2">
+    <div
+      className="w-full p-5 rounded-xl shadow-md bg-black text-white border border-blue-500 hover:bg-gray-900 transition duration-300 flex flex-col h-full relative group cursor-pointer"
+      onClick={handleViewDetails}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => e.key === "Enter" && handleViewDetails(e)}
+    >
+      {/* Action Buttons */}
+      <div className="absolute top-3 right-3 flex gap-2 z-10">
         <Button
-          onClick={handleButtonClick}
-          variant="outline"
-          className="px-3 py-1 bg-purple-500 border-purple-500 text-white text-sm font-bold rounded-md hover:bg-purple-600"
+          onClick={handleViewDetails}
+          className="px-3 py-1 h-8 bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold rounded-lg"
         >
           View Details
         </Button>
         <Button
           onClick={handleSaveInternship}
-          variant="outline"
-          className={`px-3 py-1 text-sm font-bold rounded-md flex items-center gap-2 ${
+          className={`px-3 py-1 h-8 text-xs font-semibold rounded-lg flex items-center gap-1 ${
             isSaved
-              ? "bg-blue-500 hover:bg-blue-600"
-              : "bg-gray-600 hover:bg-gray-700"
+              ? "bg-blue-600 hover:bg-blue-700"
+              : "bg-gray-700 hover:bg-gray-600"
           }`}
         >
-          {isSaved ? <BookmarkCheck size={16} /> : <Bookmark size={16} />}
+          {isSaved ? <BookmarkCheck size={14} /> : <Bookmark size={14} />}
           {isSaved ? "Saved" : "Save"}
         </Button>
       </div>
 
-      <div className="mt-12">
-        <div className="flex justify-between mb-4">
-          <p className="text-sm text-gray-400">
-            {new Date(internship.createdAt).toDateString()}
-          </p>
-        </div>
+      {/* Card Content */}
+      <div className="mt-10 flex flex-col h-full">
+        {/* Date - Left aligned */}
+        <p className="text-xs text-gray-400 mb-3 text-left">
+          {new Date(internship.createdAt).toLocaleDateString()}
+        </p>
 
-        <div className="flex gap-3 mb-4 items-start">
+        {/* Company Info */}
+        <div className="flex gap-3 mb-4">
           <img
-            src={internship?.createdAt?.profilePic || profilePic}
-            alt={`${internship.companyname} Logo`}
-            className="w-12 h-12 rounded-full object-cover"
+            src={internship?.created_by?.profile?.profilePhoto || profilePic}
+            alt="Company Logo"
+            className="w-10 h-10 rounded-full object-cover border border-gray-600"
           />
-          <div>
-            <h1 className="font-semibold text-lg">{internship.companyname}</h1>
-            <p className="text-sm text-gray-400">{internship.location}</p>
+          <div className="text-left">
+            <h2 className="text-base font-semibold line-clamp-1">
+              {internship?.created_by?.companyname || "Company Name"}
+            </h2>
+            <p className="text-xs text-gray-400">
+              {internship.location || "Location not specified"}
+            </p>
           </div>
         </div>
 
-        <div className="mb-3 text-left">
-          <h1 className="font-bold text-xl">{internship.title}</h1>
+        {/* Internship Title & Description */}
+        <div className="mb-4 text-left">
+          <h1 className="text-lg font-bold line-clamp-1 mb-2">
+            {internship.title || "Internship Title"}
+          </h1>
           {internship.description && (
-            <p className="text-sm text-gray-300 mt-1">
+            <p className="text-sm text-gray-300 line-clamp-2">
               {internship.description}
             </p>
           )}
         </div>
 
-        <div className="flex flex-wrap gap-2 mt-3">
-          <span className="px-2 py-1 bg-orange-400 text-black text-sm font-bold rounded-md">
-            {internship.duration}
+        {/* Tags */}
+        <div className="flex flex-wrap gap-2 mb-4">
+          <span className="px-2.5 py-1 bg-orange-400 text-black text-xs font-medium rounded-md">
+            {internship.duration || "Duration N/A"}
           </span>
-          <span className="px-2 py-1 bg-blue-500 text-black text-sm font-bold rounded-md">
-            {internship.stipend}
+          <span className="px-2.5 py-1 bg-blue-500 text-black text-xs font-medium rounded-md">
+            {internship.stipend || "Stipend N/A"}
           </span>
           <span
-            className={`px-2 py-1 text-sm font-bold rounded-md ${
+            className={`px-2.5 py-1 text-xs font-medium rounded-md ${
               internship.type === "Remote"
-                ? "bg-yellow-500 text-black"
-                : "bg-purple-700 text-white"
+                ? "bg-yellow-400 text-black"
+                : "bg-purple-600 text-white"
             }`}
           >
-            {internship.type}
+            {internship.type || "Type N/A"}
           </span>
         </div>
 
-        <div className="mt-3 text-left">
-          <p className="text-gray-300 text-sm font-semibold mb-2">
-            Required Skills:
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {internship.skills.map((skill, index) => (
-              <span
-                key={index}
-                className="px-2 py-1 bg-gray-700 text-white text-xs rounded-md"
-              >
-                {skill}
-              </span>
-            ))}
+        {/* Skills - Left aligned */}
+        {internship.skills?.length > 0 && (
+          <div className="mt-auto text-left">
+            <p className="text-xs font-medium text-gray-400 mb-2">
+              Required Skills:
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {internship.skills.slice(0, 4).map((skill, index) => (
+                <span
+                  key={index}
+                  className="px-2 py-1 bg-gray-700 text-white text-xs rounded-md"
+                >
+                  {skill.length > 12 ? `${skill.substring(0, 10)}...` : skill}
+                </span>
+              ))}
+              {internship.skills.length > 4 && (
+                <span className="px-2 py-1 bg-gray-800 text-gray-400 text-xs rounded-md">
+                  +{internship.skills.length - 4}
+                </span>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

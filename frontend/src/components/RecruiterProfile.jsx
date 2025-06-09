@@ -64,6 +64,7 @@ const RecruiterProfile = () => {
           "http://localhost:8000/api/v1/job/recruiter",
           { withCredentials: true }
         );
+        console.log("Jobs Response:", jobsRes.data);
         setPostedJobs(jobsRes.data.jobs || []);
 
         try {
