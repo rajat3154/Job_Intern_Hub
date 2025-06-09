@@ -89,7 +89,7 @@ export const getAllInternships = async (req, res) => {
 export const getInternshipById = async (req, res) => {
       try {
             const internshipId = req.params.id;
-            const userId = req.user?._id; // get logged in user ID from auth middleware
+            const userId = req.user?._id;
 
             console.log("Received internshipId:", internshipId);
 
@@ -109,11 +109,12 @@ export const getInternshipById = async (req, res) => {
                   });
             }
 
-            // Find if the logged in user has applied and get their application status
             let currentUserApplication = null;
             if (userId) {
                   const userApp = internship.applications.find(
-                        (app) => app.applicant._id.toString() === userId.toString()
+                        (app) =>
+                              app.applicant &&
+                              app.applicant._id.toString() === userId.toString()
                   );
                   if (userApp) {
                         currentUserApplication = {
@@ -138,6 +139,7 @@ export const getInternshipById = async (req, res) => {
             });
       }
 };
+    
 
 
 export const getInternshipsByRecruiter = async (req, res) => {

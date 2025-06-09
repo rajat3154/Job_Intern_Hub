@@ -37,7 +37,8 @@ const InternshipDetails = () => {
         { withCredentials: true }
       );
       console.log(res);
-      setApplicants(res.data.applicants || []);
+      setApplicants((res.data.applicants || []).filter((app) => app !== null));
+
     } catch (error) {
       console.error("Failed to fetch applicants:", error);
       toast.error("Error loading applicants");

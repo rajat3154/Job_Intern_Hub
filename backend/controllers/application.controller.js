@@ -163,33 +163,37 @@ export const applyInternship = async (req, res) => {
 };
     
 export const getAppliedJobs = async (req, res, next) => {
-    try {
-        const userId = req.user._id; // Using _id instead of id
-        console.log("Fetching applications for userId:", userId);
+      try {
+            const userId = req.user._id;
+            console.log("Fetching applications for userId:", userId);
 
-        const applications = await Application.find({ applicant: userId })
-            .populate({
-                path: 'job',
-                model: 'Job', // Explicitly specify the model
-                populate: {
-                    path: 'created_by',
-                    model: 'Recruiter',
-                    select: 'companyname'
-                }
-            })
-            .sort({ createdAt: -1 });
+            const applications = await Application.find({ applicant: userId })
+                  .populate({
+                        path: 'job',
+                        model: 'Job',
+                        populate: {
+                              path: 'created_by',
+                              model: 'Recruiter',
+                              select: 'companyname'
+                        }
+                  })
+                  .sort({ createdAt: -1 });
 
-        console.log("Found applications:", JSON.stringify(applications, null, 2));
+            // Filter out applications with missing or null job reference
+            const filteredApplications = applications.filter(app => app.job);
 
-        return res.status(200).json({
-            success: true,
-            appliedJobs: applications
-        });
-    } catch (error) {
-        console.error("Error in getAppliedJobs:", error);
-        next(error);
-    }
+            console.log("Filtered applications:", JSON.stringify(filteredApplications, null, 2));
+
+            return res.status(200).json({
+                  success: true,
+                  appliedJobs: filteredApplications
+            });
+      } catch (error) {
+            console.error("Error in getAppliedJobs:", error);
+            next(error);
+      }
 };
+    
 export const getAppliedInternships = async (req, res, next) => {
       try {
             const userId = req.user._id;
@@ -204,21 +208,24 @@ export const getAppliedInternships = async (req, res, next) => {
                   })
                   .sort({ createdAt: -1 });
 
+            // Filter applications with valid internship
+            const filteredApplications = applications.filter(app => app.internship);
+
             // Format the response data
-            const formattedApplications = applications.map(app => ({
+            const formattedApplications = filteredApplications.map(app => ({
                   _id: app._id,
                   status: app.status,
                   appliedAt: app.createdAt,
                   internship: {
-                        _id: app.internship?._id,
-                        title: app.internship?.title,
-                        location: app.internship?.location,
-                        duration: app.internship?.duration,
-                        salary: app.internship?.salary,
+                        _id: app.internship._id,
+                        title: app.internship.title,
+                        location: app.internship.location,
+                        duration: app.internship.duration,
+                        salary: app.internship.salary,
                         recruiter: {
-                              _id: app.internship?.recruiter?._id,
-                              companyname: app.internship?.recruiter?.companyname,
-                              profilePhoto: app.internship?.recruiter?.profilePhoto
+                              _id: app.internship.recruiter?._id,
+                              companyname: app.internship.recruiter?.companyname,
+                              profilePhoto: app.internship.recruiter?.profilePhoto
                         }
                   }
             }));
@@ -231,7 +238,8 @@ export const getAppliedInternships = async (req, res, next) => {
             console.error("Error fetching applied internships:", error);
             next(error);
       }
-    };
+};
+    
 
 export const getApplicants = async (req, res) => {
       const job = await Job.findById(req.params.id)

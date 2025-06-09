@@ -136,6 +136,7 @@ const Profile = () => {
           withCredentials: true,
         }
       );
+      console.log("Applied Jobs Response:", response.data);
 
       if (response.data.success) {
         setAppliedJobs(response.data.appliedJobs);
@@ -154,6 +155,7 @@ const Profile = () => {
         "http://localhost:8000/api/v1/application/internships/get",
         { withCredentials: true }
       );
+      console.log("Applied Internships Response:", response.data);
 
       if (response.data.success) {
         setAppliedInternships(response.data.applications);
