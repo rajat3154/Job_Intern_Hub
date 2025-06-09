@@ -15,15 +15,44 @@ export const sregister = async (req, res) => {
                         success: false
                   });
             }
-            if (!req.file) {
-                  return res.status(400).json({
-                        message: "Profile photo is required",
-                        success: false
+            if (req.file) {
+
+                  if (role !== "student") {
+                        return res.status(400).json({
+                              message: "Invalid role",
+                              success: false
+                        });
+                  }
+
+                  const file = req.file;
+                  const fileUri = getDataUri(file);
+                  const cloudResponse = await cloudinary.uploader.upload(fileUri.content);
+                  const studentExists = await Student.findOne({ email });
+                  if (studentExists) {
+                        return res.status(400).json({
+                              message: "Email already exists",
+                              success: false
+                        });
+                  }
+
+                  const hashedPassword = await bcrypt.hash(password, 10);
+                  await Student.create({
+                        fullname,
+                        email,
+                        phonenumber,
+                        password: hashedPassword,
+                        role: 'student',
+                        status,
+                        profile: {
+                              profilePhoto: cloudResponse.secure_url,
+                        }
+                  });
+                  res.status(201).json({
+                        message: "Account created successfully",
+                        success: true
                   });
             }
-            const file = req.file;
-            const fileUri = getDataUri(file);
-            const cloudResponse = await cloudinary.uploader.upload(fileUri.content);
+        
 
             if (role !== "student") {
                   return res.status(400).json({
@@ -49,9 +78,7 @@ export const sregister = async (req, res) => {
                   password: hashedPassword,
                   role: 'student',
                   status,
-                  profile: {
-                        profilePhoto: cloudResponse.secure_url,
-                  }
+                 
 
             });
 

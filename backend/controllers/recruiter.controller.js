@@ -34,7 +34,7 @@ export const recregister = async (req, res) => {
             // Check for existing recruiters
             const existingRequest = await RecruiterRequest.findOne({ email });
             const recruiterExists = await Recruiter.findOne({ email });
-            if (recruiterExists) {
+            if (recruiterExists|| existingRequest) {
                   return res.status(400).json({
                         message: "Email already exists",
                         success: false
