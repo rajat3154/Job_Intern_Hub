@@ -28,7 +28,7 @@ const LatestJobCards = ({ job, onDetails, onSave }) => {
 
   return (
     <div
-      className="w-full p-6 rounded-lg shadow-lg bg-black text-white border border-blue-500 hover:bg-gray-800 cursor-pointer transition duration-300 flex flex-col h-full relative"
+      className="w-fit p-6 rounded-lg shadow-lg bg-black text-white border border-blue-500 hover:bg-gray-800 cursor-pointer transition duration-300 flex flex-col h-full relative"
       onClick={handleViewDetailsClick}
       role="button"
       tabIndex={0}
@@ -95,7 +95,7 @@ const LatestJobCards = ({ job, onDetails, onSave }) => {
 
         <div className="mt-auto space-y-4">
           <div className="flex flex-wrap gap-2">
-            <span className="px-4 py- bg-blue-400 text-black text-sm font-bold rounded-md">
+            <span className="px-4 py-1 bg-blue-400 text-black text-sm font-bold rounded-md">
               {job.position || 1} Position{job.position > 1 ? "s" : ""}
             </span>
             <span className="px-2 py-1 bg-red-600 text-white text-sm font-bold rounded-md">
