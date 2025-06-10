@@ -91,7 +91,18 @@ const RecruiterProfile = () => {
     };
     fetchAllData();
   }, [currentUser._id]);
-
+  const fetchJobsagain = async () => {
+    try {
+      const jobsRes = await axios.get(
+        "http://localhost:8000/api/v1/job/recruiter",
+        { withCredentials: true }
+      );
+      setPostedJobs(jobsRes.data.jobs || []);
+    } catch (error) {
+      console.error("Error fetching jobs:", error);
+      toast.error("Failed to load jobs");
+    }
+  };
   const handleJobPosted = () => {
     // Remove fetchAllData() and instead refetch the specific data
     const fetchJobs = async () => {
@@ -143,12 +154,28 @@ const RecruiterProfile = () => {
         setIsSaved(response.data.isSaved);
         toast.success(response.data.message);
       }
+     
     } catch (error) {
       console.error("Error saving job:", error);
       toast.error("Failed to save job");
     }
   };
+  const handleDeleteJob = async (e, jobId) => {
+    e.stopPropagation();
 
+    const confirm = window.confirm("Are you sure you want to delete this job?");
+    if (!confirm) return;
+
+    try {
+      const response = await axios.delete(
+        `http://localhost:8000/api/v1/job/delete/${jobId}`,{withCredentials: true}
+      );
+      toast.success(response.data.message || "Job deleted successfully");
+      fetchJobsagain();
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to delete the job");
+    }
+  };
   const renderJobCard = (job) => (
     <motion.div
       key={job._id}
@@ -165,7 +192,14 @@ const RecruiterProfile = () => {
           size="sm"
           className="bg-purple-600 hover:bg-purple-700 text-white"
         >
-          View Details
+          View
+        </Button>
+        <Button
+          onClick={(e) => handleDeleteJob(e, job._id)}
+          size="sm"
+          className="bg-red-600 hover:bg-red-700 text-white"
+        >
+          Delete
         </Button>
       </div>
 
@@ -207,7 +241,7 @@ const RecruiterProfile = () => {
             {job.jobType}
           </Badge>
           <Badge className="bg-yellow-500/20 text-yellow-400">
-            {job.salary} LPA
+            {job.salary}
           </Badge>
         </div>
       </div>
@@ -265,12 +299,12 @@ const RecruiterProfile = () => {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <Badge className="bg-blue-500/20 text-blue-400">Internship</Badge>
+          <Badge className="bg-blue-500/20 text-blue-400">{internship.type}</Badge>
           <Badge className="bg-green-500/20 text-green-400">
-            {internship.salary}/month
+            {internship.stipend}
           </Badge>
           <Badge className="bg-yellow-500/20 text-yellow-400">
-            {internship.duration} months
+            {internship.duration}
           </Badge>
         </div>
       </div>
@@ -597,7 +631,7 @@ const RecruiterProfile = () => {
                       </p>
                       <Button
                         onClick={() => setShowPostInternship(true)}
-                        className="bg-blue-600 hover:bg-blue-700"
+                        className="bg-blue-600 hover:bg-blue-700 "
                       >
                         <PlusCircle className="mr-2" size={16} />
                         Post Internship

@@ -18,7 +18,7 @@ export const postJob = async (req, res) => {
                   title,
                   description,
                   requirements: Array.isArray(requirements) ? requirements : [requirements],
-                  salary: Number(salary),
+                  salary: salary,
                   location,
                   jobType,
                   experience,
@@ -210,3 +210,32 @@ export const saveJob = async (req, res) => {
             });
       }
 };
+export const deleteJobById = async (req, res) => {
+      try {
+            const jobId = req.params.id;
+            const recruiterId = req.user._id;
+
+            const job = await Job.findOne({ _id: jobId, created_by: recruiterId });
+
+            if (!job) {
+                  return res.status(404).json({
+                        success: false,
+                        message: "Job not found or you're not authorized to delete this job",
+                  });
+            }
+
+            await job.deleteOne();
+
+            return res.status(200).json({
+                  success: true,
+                  message: "Job deleted successfully",
+            });
+      } catch (error) {
+            console.error("Error deleting job:", error);
+            return res.status(500).json({
+                  success: false,
+                  message: "Server error while deleting job",
+            });
+      }
+};
+    

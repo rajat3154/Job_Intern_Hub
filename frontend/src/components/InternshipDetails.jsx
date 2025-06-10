@@ -49,11 +49,21 @@ const InternshipDetails = () => {
     try {
       setLoading(true);
       console.log(appId);
+      console.log(status);
+      // const res = await axios.post(
+      //   // `${APPLICATION_API_END_POINT}/intern/status/${appId}/update`,
+      //   `${APPLICATION_API_END_POINT}/status/${appId}/update`,
+      //   { status },
+      //   { withCredentials: true }
+      // );
+
       const res = await axios.post(
         `http://localhost:8000/api/v1/application/intern/status/${appId}/update`,
         { status },
-        { withCredentials: true }
+        { withCredentials: true }   
       );
+      console.log(res);
+
       if (res.data.success) {
         toast.success(res.data.message);
         // Refresh job data after updating status

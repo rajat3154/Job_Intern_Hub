@@ -36,11 +36,13 @@ const JobDetails = () => {
   const handleStatusUpdate = async (status, appId) => {
     try {
       setLoading(true);
+      console.log(status, appId);
       const res = await axios.post(
         `${APPLICATION_API_END_POINT}/status/${appId}/update`,
         { status },
         { withCredentials: true }
       );
+      console.log(res);
       if (res.data.success) {
         toast.success(res.data.message);
         // Refresh job data after updating status

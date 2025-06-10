@@ -307,7 +307,7 @@ const Jobs = () => {
                         {job.jobType}
                       </span>
                       <span className="px-2 py-1 bg-yellow-400 text-black text-sm font-bold rounded-md">
-                        {job.salary} LPA
+                        {job.salary}
                       </span>
                     </div>
                   </div>

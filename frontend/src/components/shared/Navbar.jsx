@@ -36,15 +36,14 @@ const Navbar = () => {
 
   return (
     <div className="bg-black">
-      <div className="flex items-center justify-between mx-auto max-w-7xl h-16 px-4">
+      <div className="flex items-center justify-between mx-auto max-w-7xl h-20 px-4">
         {/* Logo */}
         <div>
-          <Link to="/" className="text-2xl font-bold text-white">
+          <Link to="/" className="text-4xl font-bold text-white">
             JobIntern<span className="text-[#3B82F6]">Hub</span>
           </Link>
         </div>
 
-        {/* Navigation and User Actions */}
         <div className="flex items-center gap-6">
           <ul className="flex font-medium items-center gap-5 text-gray-300">
             {user?.role === "recruiter" && (
