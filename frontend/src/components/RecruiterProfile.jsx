@@ -72,6 +72,7 @@ const RecruiterProfile = () => {
             "http://localhost:8000/api/v1/internship/recruiter",
             { withCredentials: true }
           );
+          console.log("Internships Response:", internshipsRes.data);
           setInternships(
             internshipsRes.data.internships || internshipsRes.data || []
           );
@@ -103,6 +104,21 @@ const RecruiterProfile = () => {
       toast.error("Failed to load jobs");
     }
   };
+  const fetchInternshipsagain = async () => {
+    try {
+      const internshipsRes = await axios.get(
+        "http://localhost:8000/api/v1/internship/recruiter",
+        { withCredentials: true }
+      );
+      console.log("Internships Response:", internshipsRes.data);
+      setInternships(
+        internshipsRes.data.internships || internshipsRes.data || []
+      );
+    } catch (error) {
+      console.error("Error fetching internships:", error);
+      toast.error("Failed to load internships");
+    }
+  };
   const handleJobPosted = () => {
     // Remove fetchAllData() and instead refetch the specific data
     const fetchJobs = async () => {
@@ -129,6 +145,7 @@ const RecruiterProfile = () => {
           "http://localhost:8000/api/v1/internship/recruiter",
           { withCredentials: true }
         );
+        console.log("Internships Response:", internshipsRes.data);
         setInternships(
           internshipsRes.data.internships || internshipsRes.data || []
         );
@@ -171,6 +188,20 @@ const RecruiterProfile = () => {
       fetchJobsagain();
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to delete the job");
+    }
+  };
+  const confirmDeleteInternship = async (e,internshipId) => {
+    try {
+      const response = await axios.delete(
+        `http://localhost:8000/api/v1/internship/delete/${internshipId}`,
+        { withCredentials: true }
+      );
+      toast.success(response.data.message || "Internship deleted successfully");
+      fetchInternshipsagain();
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || "Failed to delete the internship"
+      );
     }
   };
   const renderJobCard = (job) => (
@@ -250,21 +281,27 @@ const RecruiterProfile = () => {
       key={internship._id}
       whileHover={{ scale: 1.02 }}
       className="relative p-6 rounded-xl bg-gray-900 text-white border border-gray-800 hover:border-blue-500 cursor-pointer transition-all duration-300 w-full"
-      onClick={() => navigate(`/internship/details/${internship._id}`)}
+     
     >
-      <div className="absolute top-4 right-4">
+      <div className="absolute top-4 right-4 flex gap-2">
         <Button
           onClick={(e) => {
             e.stopPropagation();
-            navigate(`/internship/details/${internship._id}`);
+            navigate(`/job/details/${job._id}`);
           }}
           size="sm"
           className="bg-purple-600 hover:bg-purple-700 text-white"
         >
-          View Details
+          View
+        </Button>
+        <Button
+          onClick={(e) => confirmDeleteInternship(e, internship._id)}
+          size="sm"
+          className="bg-red-600 hover:bg-red-700 text-white"
+        >
+          Delete
         </Button>
       </div>
-
       <div className="mt-12">
         <div className="flex items-center justify-between mb-4">
           <p className="text-sm text-gray-400">
@@ -296,7 +333,9 @@ const RecruiterProfile = () => {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <Badge className="bg-blue-500/20 text-blue-400">{internship.type}</Badge>
+          <Badge className="bg-blue-500/20 text-blue-400">
+            {internship.type}
+          </Badge>
           <Badge className="bg-green-500/20 text-green-400">
             {internship.stipend}
           </Badge>

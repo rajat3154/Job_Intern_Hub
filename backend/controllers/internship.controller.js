@@ -261,3 +261,33 @@ export const saveInternship = async (req, res) => {
             });
       }
 };
+export const deleteInternship = async (req, res) => {
+      try {
+            const internshipId = req.params.id;
+            const userId = req.user._id;
+
+            // Check if the internship exists and belongs to the recruiter
+            const internship = await Internship.findOne({ _id: internshipId, recruiter: userId });
+
+            if (!internship) {
+                  return res.status(404).json({
+                        success: false,
+                        message: "Internship not found or unauthorized to delete",
+                  });
+            }
+
+            await Internship.findByIdAndDelete(internshipId);
+
+            return res.status(200).json({
+                  success: true,
+                  message: "Internship deleted successfully",
+            });
+      } catch (error) {
+            console.error("Error deleting internship:", error);
+            return res.status(500).json({
+                  success: false,
+                  message: "Failed to delete internship",
+            });
+      }
+};
+    

@@ -1,6 +1,6 @@
 import express from "express";
 import isAuthenticated from "../middlewares/isAuthenticated.js";
-import { getAllInternships, getInternshipById, getInternshipsByRecruiter, postInternship, getLatestInternships, isInternshipSaved, saveInternship } from "../controllers/internship.controller.js";
+import { getAllInternships, getInternshipById, getInternshipsByRecruiter, postInternship, getLatestInternships, isInternshipSaved, saveInternship, deleteInternship} from "../controllers/internship.controller.js";
 import { Internship } from "../models/internship.model.js";
 
 const router = express.Router();
@@ -46,4 +46,5 @@ router.route("/latest").get(async (req, res) => {
 router.route("/get/:id").get(isAuthenticated,getInternshipById);
 router.route("/is-saved-internship/:id").get(isAuthenticated, isInternshipSaved);
 router.route("/save-internship/:id").post(isAuthenticated, saveInternship);
+router.route("/delete/:id").delete(isAuthenticated, deleteInternship);
 export default router;
