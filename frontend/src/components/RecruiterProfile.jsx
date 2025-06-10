@@ -163,9 +163,6 @@ const RecruiterProfile = () => {
   const handleDeleteJob = async (e, jobId) => {
     e.stopPropagation();
 
-    const confirm = window.confirm("Are you sure you want to delete this job?");
-    if (!confirm) return;
-
     try {
       const response = await axios.delete(
         `http://localhost:8000/api/v1/job/delete/${jobId}`,{withCredentials: true}
