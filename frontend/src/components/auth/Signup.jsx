@@ -15,7 +15,7 @@ const WelcomeStep = ({ onNext }) => (
     className="space-y-6"
   >
     <h2 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
-      Welcome to CareerConnect
+      Welcome to JobInternHub
     </h2>
     <p className="text-gray-400 text-lg">
       Your gateway to amazing career opportunities and top talent.
