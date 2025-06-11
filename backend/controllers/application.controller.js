@@ -268,7 +268,7 @@ export const getInternshipApplicants = async (req, res) => {
             });
       return res.status(200).json({
             internship,
-            applicants: internship.applications, // Return full application objects
+            applicants: internship.applications.map(app => app.applicant),
             success: true,
       });
 };
