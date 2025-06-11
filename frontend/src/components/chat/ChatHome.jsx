@@ -592,9 +592,9 @@ const MessageContainer = ({ unreadCounts, setUnreadCounts }) => {
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-gray-900">
+    <div className="flex-1 flex flex-col bg-black">
       {/* Chat header */}
-      <div className="p-4 border-b border-gray-800 flex items-center">
+      <div className="p-4 border-b border-gray-800 flex items-center bg-gray-900">
         <Button
           variant="ghost"
           size="icon"
@@ -612,7 +612,11 @@ const MessageContainer = ({ unreadCounts, setUnreadCounts }) => {
         <div className="ml-3">
           <h3 className="font-semibold text-white">{selectedUser.fullName}</h3>
           <div className="flex items-center">
-            <div className={`h-2 w-2 rounded-full mr-1 ${selectedUser.isOnline ? "bg-green-500" : "bg-gray-500"}`}></div>
+            <div
+              className={`h-2 w-2 rounded-full mr-1 ${
+                selectedUser.isOnline ? "bg-green-500" : "bg-gray-500"
+              }`}
+            ></div>
             <p className="text-xs text-gray-400">
               {selectedUser.isOnline ? "Online" : "Offline"}
             </p>
@@ -620,7 +624,11 @@ const MessageContainer = ({ unreadCounts, setUnreadCounts }) => {
         </div>
 
         <div className="ml-auto">
-          <Button variant="ghost" size="icon" className="text-gray-400 hover:text-blue-400">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-gray-400 hover:text-blue-400"
+          >
             <Video className="h-5 w-5" />
           </Button>
         </div>
@@ -641,48 +649,64 @@ const MessageContainer = ({ unreadCounts, setUnreadCounts }) => {
           </div>
         ) : Array.isArray(messages) && messages.length > 0 ? (
           <div className="flex flex-col space-y-4">
-            {[...messages].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)).map((message) => (
-              <motion.div
-                key={message._id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={`flex ${message.senderId === authUser._id ? "justify-end" : "justify-start"}`}
-              >
-                <div
-                  className={`max-w-xs md:max-w-md rounded-lg px-4 py-2 ${
+            {[...messages]
+              .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+              .map((message) => (
+                <motion.div
+                  key={message._id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`flex ${
                     message.senderId === authUser._id
-                      ? "bg-blue-600 rounded-tr-none"
-                      : "bg-gray-800 rounded-tl-none"
+                      ? "justify-end"
+                      : "justify-start"
                   }`}
                 >
-                  <p className="text-white">{message.message}</p>
-                  <p className="text-xs text-gray-300 text-right mt-1">
-                    {new Date(message.createdAt).toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </p>
-                </div>
-              </motion.div>
-            ))}
+                  <div
+                    className={`max-w-xs md:max-w-md rounded-lg px-4 py-2 ${
+                      message.senderId === authUser._id
+                        ? "bg-blue-600 rounded-tr-none"
+                        : "bg-gray-800 rounded-tl-none"
+                    }`}
+                  >
+                    <p className="text-white">{message.message}</p>
+                    <p className="text-xs text-gray-300 text-right mt-1">
+                      {new Date(message.createdAt).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                  </div>
+                </motion.div>
+              ))}
             <div ref={messagesEndRef} />
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-center p-8 text-gray-400">
-            <h3 className="text-lg font-semibold text-blue-400 mb-2">No messages yet</h3>
+            <h3 className="text-lg font-semibold text-blue-400 mb-2">
+              No messages yet
+            </h3>
             <p>Start the conversation with {selectedUser.fullName}</p>
           </div>
         )}
       </div>
 
       {/* Message input */}
-      <div className="p-4 border-t border-gray-800">
+      <div className="p-4 border-gray-900 bg-gray-900">
         <form onSubmit={handleSendMessage} className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="text-gray-400 hover:text-blue-400">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-gray-400 hover:text-blue-400"
+          >
             <Paperclip className="h-5 w-5" />
           </Button>
 
-          <Button variant="ghost" size="icon" className="text-gray-400 hover:text-blue-400">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-gray-400 hover:text-blue-400"
+          >
             <Smile className="h-5 w-5" />
           </Button>
 

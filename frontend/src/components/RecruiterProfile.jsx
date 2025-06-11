@@ -281,27 +281,27 @@ const RecruiterProfile = () => {
       key={internship._id}
       whileHover={{ scale: 1.02 }}
       className="relative p-6 rounded-xl bg-gray-900 text-white border border-gray-800 hover:border-blue-500 cursor-pointer transition-all duration-300 w-full"
-     
+      onClick={() => navigate(`/internship/details/${internship._id}`)}
     >
-      <div className="absolute top-4 right-4 flex gap-2">
+      <div className="absolute top-4 right-4">
         <Button
           onClick={(e) => {
             e.stopPropagation();
-            navigate(`/job/details/${job._id}`);
+            navigate(`/internship/details/${internship._id}`);
           }}
           size="sm"
           className="bg-purple-600 hover:bg-purple-700 text-white"
         >
-          View
+          View Details
         </Button>
         <Button
-          onClick={(e) => confirmDeleteInternship(e, internship._id)}
-          size="sm"
-          className="bg-red-600 hover:bg-red-700 text-white"
+          onClick={(e) => handleDeleteClick(e, internship._id)}
+          className=" bg-red-600 text-red-500 hover:text-red-700 text-sm font-medium text-white m-2"
         >
           Delete
         </Button>
       </div>
+
       <div className="mt-12">
         <div className="flex items-center justify-between mb-4">
           <p className="text-sm text-gray-400">
