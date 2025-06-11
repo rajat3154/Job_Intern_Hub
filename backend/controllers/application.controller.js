@@ -268,7 +268,7 @@ export const getInternshipApplicants = async (req, res) => {
             });
       return res.status(200).json({
             internship,
-            applicants: internship.applications.map(app => app.applicant),
+            applicants: internship.applications, // Return full application objects
             success: true,
       });
 };
@@ -312,7 +312,7 @@ export const updateStatus = async (req, res) => {
             // Send notification through socket
             const io = getIO();
             if (io) {
-                  io.to(application.applicant._id.toString()).emit("newNotification", notification);
+                  io.to(application.applicant._id.toString()).emit('newNotification', notification);
             }
 
             return res
@@ -324,56 +324,52 @@ export const updateStatus = async (req, res) => {
             return res.status(500).json({ message: "Server error", success: false });
       }
 };
-    
-export const updateStatusInternship = async (req, res) => {
-      try {
-            const { status } = req.body;
-            const applicationId = req.params.id;
-            if (!status) {
-                  return res
-                        .status(400)
-                        .json({ message: "Status is required", success: false });
-            }
 
-            // Find the application
-            const application = await Application.findById(applicationId)
-                  .populate("internship")
-                  .populate("applicant");
+// New controller function for internship application status update
+export const updateInternshipApplicationStatus = async (req, res) => {
+  try {
+    console.log("Received updateInternshipApplicationStatus request");
+    console.log("Request params:", req.params);
+    console.log("Request body:", req.body);
 
-            if (!application) {
-                  return res
-                        .status(404)
-                        .json({ message: "Application not found", success: false });
-            }
+    const { status } = req.body;
+    const applicationId = req.params.id;
+    if (!status) {
+      console.log("Status missing in request body");
+      return res.status(400).json({ message: "Status is required", success: false });
+    }
 
-            // Update status
-            application.status = status.toLowerCase();
-            await application.save();
+    const application = await Application.findById(applicationId)
+      .populate("internship")
+      .populate("applicant");
 
-            // Create notification to send to the student
-            const notification = await Notification.create({
-                  recipient: application.applicant._id, // Send to student
-                  sender: application.internship.created_by,   // Recruiter (assuming this is populated)
-                  senderModel: 'Recruiter',
-                  type: 'application',
-                  title: 'Application Status Updated',
-                  message: `Your application for "${application.internship.title}" has been ${status.toLowerCase()}.`,
-                  read: false,
-            });
+    if (!application) {
+      console.log("Application not found for ID:", applicationId);
+      return res.status(404).json({ message: "Application not found", success: false });
+    }
 
-            // Send notification through socket
-            const io = getIO();
-            if (io) {
-                  io.to(application.applicant._id.toString()).emit("newNotification", notification);
-            }
+    application.status = status.toLowerCase();
+    await application.save();
 
-            return res
-                  .status(200)
-                  .json({ message: "Status updated successfully", success: true });
+    const notification = await Notification.create({
+      recipient: application.applicant._id,
+      sender: application.internship.created_by,
+      senderModel: 'Recruiter',
+      type: 'application',
+      title: 'Application Status Updated',
+      message: `Your application for "${application.internship.title}" has been ${status.toLowerCase()}.`,
+      read: false,
+    });
 
-      } catch (error) {
-            console.log(error);
-            return res.status(500).json({ message: "Server error", success: false });
-      }
+    const io = getIO();
+    if (io) {
+      io.to(application.applicant._id.toString()).emit('newNotification', notification);
+    }
+
+    console.log("Status updated successfully for application ID:", applicationId);
+    return res.status(200).json({ message: "Status updated successfully", success: true });
+  } catch (error) {
+    console.error("Error in updateInternshipApplicationStatus:", error);
+    return res.status(500).json({ message: "Server error", success: false });
+  }
 };
-    

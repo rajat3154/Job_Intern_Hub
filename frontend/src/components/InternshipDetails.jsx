@@ -58,7 +58,7 @@ const InternshipDetails = () => {
       // );
 
       const res = await axios.post(
-        `http://localhost:8000/api/v1/application/intern/status/${appId}/update`,
+        `http://localhost:8000/api/v1/application/internship/status/${appId}/update`,
         { status },
         { withCredentials: true }   
       );
@@ -67,7 +67,7 @@ const InternshipDetails = () => {
       if (res.data.success) {
         toast.success(res.data.message);
         // Refresh job data after updating status
-        fetchJobWithApplicants();
+        fetchApplicants();
       } else {
         toast.error("Status update failed");
       }
@@ -198,17 +198,17 @@ const InternshipDetails = () => {
                   {applicants.length > 0 ? (
                     applicants.map((app) => (
                       <tr key={app._id} className="border-b border-gray-600">
-                        <td className="py-4">{app.fullname || "N/A"}</td>
-                        <td>{app.email || "N/A"}</td>
+                        <td className="py-4">{app.applicant?.fullname || "N/A"}</td>
+                        <td>{app.applicant?.email || "N/A"}</td>
                         <td>
                           <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-sm">
                             {app.status || "Pending"}
                           </span>
                         </td>
                         <td>
-                          {app.profile?.resume ? (
+                          {app.applicant?.resume ? (
                             <a
-                              href={app.resumeUrl}
+                              href={app.applicant.resume}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="text-blue-400 hover:underline"
