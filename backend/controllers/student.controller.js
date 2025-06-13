@@ -4,6 +4,8 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken"
 import getDataUri from "../utils/datauri.js";
 import cloudinary from "../utils/cloudinary.js";
+
+
 export const sregister = async (req, res) => {
       try {
             const { fullname, email, phonenumber, password, role, status } = req.body;
