@@ -1,18 +1,19 @@
-import React, { useState } from "react";
+import React from "react";
 import { Button } from "./ui/button";
 import { Search, Rocket, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
+import { useSearch } from "../context/SearchContext";
 
-const HeroSection = ({ query, setQuery }) => {
+const HeroSection = () => {
+  const { searchQuery, setSearchQuery } = useSearch();
+
   return (
     <div className="relative bg-black text-white py-28 overflow-hidden">
-      {/* Animated Background Elements */}
       <div className="absolute inset-0 opacity-20">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-500/10 to-transparent"></div>
       </div>
 
       <div className="container mx-auto text-center px-4 relative z-10">
-        {/* Tagline with animation */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -23,7 +24,6 @@ const HeroSection = ({ query, setQuery }) => {
           <span>No.1 Job & Internship Platform</span>
         </motion.div>
 
-        {/* Main Heading */}
         <motion.h1
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
@@ -39,7 +39,6 @@ const HeroSection = ({ query, setQuery }) => {
           </span>
         </motion.h1>
 
-        {/* Subheading */}
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -50,7 +49,6 @@ const HeroSection = ({ query, setQuery }) => {
           internships at top companies worldwide.
         </motion.p>
 
-        {/* Enhanced Search Bar */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -60,8 +58,8 @@ const HeroSection = ({ query, setQuery }) => {
           <input
             type="text"
             placeholder="Job title, keywords, or company..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full py-4 pl-6 pr-2 bg-transparent text-white placeholder-gray-400 border-none focus:ring-0 outline-none"
           />
 
@@ -74,7 +72,6 @@ const HeroSection = ({ query, setQuery }) => {
           </Button>
         </motion.div>
 
-        {/* Quick Stats */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

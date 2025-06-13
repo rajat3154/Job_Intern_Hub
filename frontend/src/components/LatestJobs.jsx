@@ -3,26 +3,24 @@ import { Link, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import LatestJobCards from "./LatestJobCards";
 import { toast } from "sonner";
+import { useSearch } from "../context/SearchContext";
 
-const LatestJobs = ({ query }) => {
+const LatestJobs = () => {
   const [latestJobs, setLatestJobs] = useState([]);
   const navigate = useNavigate();
   const { user } = useSelector((store) => store.auth);
+  const { searchQuery } = useSearch();
 
   const fetchLatestJobs = async () => {
     try {
       const response = await fetch("http://localhost:8000/api/v1/job/latest", {
         method: "GET",
         headers: { "Content-Type": "application/json" },
-    
       });
 
       const data = await response.json();
-      console.log("Latest Jobs Data:", data);
       if (data.success && Array.isArray(data.jobs)) {
         setLatestJobs(data.jobs);
-      } else {
-        console.error("Invalid job data format", data);
       }
     } catch (error) {
       console.error("Error fetching latest jobs:", error);
@@ -34,26 +32,23 @@ const LatestJobs = ({ query }) => {
   }, []);
 
   const filteredJobs = latestJobs.filter((job) => {
-    const q = query?.toLowerCase().trim();
-    if (!q) return true;
-    const combinedValues = [
-      job.title,
-      job.description,
-      job.company?.name || job.company, // some data might have company as string or object
-      job.location,
-      job.jobType || job.type,
-      job.stipend,
-      job.duration,
-      ...(job.skills || []),
-    ]
-      .filter(Boolean)
-      .join(" ")
-      .toLowerCase();
+    if (!searchQuery) return true;
 
-    return combinedValues.includes(q);
+    const query = searchQuery.toLowerCase();
+    return (
+      job.title.toLowerCase().includes(query) ||
+      (job.description && job.description.toLowerCase().includes(query)) ||
+      (job.company?.name && job.company.name.toLowerCase().includes(query)) ||
+      (job.company &&
+        typeof job.company === "string" &&
+        job.company.toLowerCase().includes(query)) ||
+      (job.location && job.location.toLowerCase().includes(query)) ||
+      (job.jobType && job.jobType.toLowerCase().includes(query)) ||
+      (job.skills &&
+        job.skills.some((skill) => skill.toLowerCase().includes(query)))
+    );
   });
 
-  // Handles job card "View Details" clicks
   const handleJobClick = (jobId) => {
     if (!user) {
       navigate("/signup");
@@ -62,7 +57,6 @@ const LatestJobs = ({ query }) => {
     navigate(`/job/description/${jobId}`);
   };
 
-  // Handles job card "Save Job" clicks
   const handleSaveClick = async (jobId, setIsSaved) => {
     if (!user) {
       navigate("/signup");
@@ -103,15 +97,15 @@ const LatestJobs = ({ query }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mx-4">
           {filteredJobs.length <= 0 ? (
             <span className="col-span-full text-gray-400 text-lg">
-              No Job Available
+              {searchQuery ? "No jobs match your search" : "No jobs available"}
             </span>
           ) : (
             filteredJobs.map((job) => (
               <LatestJobCards
                 key={job._id}
                 job={job}
-                onDetails={handleJobClick}
-                onSave={handleSaveClick}
+                onDetails={() => handleJobClick(job._id)}
+                onSave={(setIsSaved) => handleSaveClick(job._id, setIsSaved)}
               />
             ))
           )}
