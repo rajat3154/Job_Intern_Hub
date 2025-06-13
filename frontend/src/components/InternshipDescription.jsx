@@ -98,7 +98,7 @@ const InternshipDescription = () => {
             {internship.duration}
           </span>
           <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-bold rounded-md">
-            ₹{internship.stipend}/month
+            ₹{internship.stipend}
           </span>
           <span className="px-3 py-1 bg-yellow-100 text-yellow-700 text-sm font-bold rounded-md">
             {internship.type}
