@@ -198,17 +198,17 @@ const InternshipDetails = () => {
                   {applicants.length > 0 ? (
                     applicants.map((app) => (
                       <tr key={app._id} className="border-b border-gray-600">
-                        <td className="py-4">{app.applicant?.fullname || "N/A"}</td>
-                        <td>{app.applicant?.email || "N/A"}</td>
+                        <td className="py-4">{app?.fullname || "N/A"}</td>
+                        <td>{app?.email || "N/A"}</td>
                         <td>
                           <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-sm">
-                            {app.status || "Pending"}
+                            {app?.status || "Pending"}
                           </span>
                         </td>
                         <td>
-                          {app.applicant?.resume ? (
+                          {app?.profile?.resume ? (
                             <a
-                              href={app.applicant.resume}
+                              href={app?.profile?.resume}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="text-blue-400 hover:underline"
