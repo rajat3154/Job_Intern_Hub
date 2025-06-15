@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken"
 import getDataUri from "../utils/datauri.js";
 import cloudinary from "../utils/cloudinary.js";
+import { getIO } from "../socket/socket.js";
 
 
 export const sregister = async (req, res) => {
@@ -213,12 +214,35 @@ export const login = async (req, res) => {
 };
 export const logout = async (req, res) => {
       try {
-            return res.status(200).cookie("token", "", { maxAge: 0 }).json({
+            // Clear the cookie first
+            res.clearCookie("token");
+
+            // Only try to update lastSeen and emit socket event if we have user info
+            if (req.user && req.user._id) {
+                  const userId = req.user._id;
+                  const userRole = req.user.role;
+
+                  // Update lastSeen timestamp
+                  const userModel = userRole === 'student' ? Student : Recruiter;
+                  await userModel.findByIdAndUpdate(userId, { lastSeen: new Date() });
+
+                  // Emit offline status through socket
+                  const io = getIO();
+                  if (io) {
+                        io.emit("user:status", { userId, isOnline: false });
+                  }
+            }
+
+            return res.status(200).json({
                   message: "Logged out successfully",
                   success: true,
             });
       } catch (error) {
-            console.log(error);
+            console.error("Logout error:", error);
+            return res.status(500).json({
+                  message: "Error during logout",
+                  success: false,
+            });
       }
 };
 export const updateProfile = async (req, res) => {

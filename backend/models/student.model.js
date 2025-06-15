@@ -21,6 +21,10 @@ const studentSchema = new mongoose.Schema({
             type: String,
             default: "student",
       },
+      lastSeen: {
+            type: Date,
+            default: Date.now
+      },
       status: {
             type: String,
             enum: ['fresher', 'experienced'],

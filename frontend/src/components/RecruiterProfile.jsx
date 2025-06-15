@@ -61,11 +61,11 @@ const RecruiterProfile = () => {
         setProfileData(profileRes.data.data);
 
         const jobsRes = await axios.get(
-          "http://localhost:8000/api/v1/job/recruiter",
+          "http://localhost:8000/api/v1/job/recruiter-jobs",
           { withCredentials: true }
         );
         console.log("Jobs Response:", jobsRes.data);
-        setPostedJobs(jobsRes.data.jobs || []);
+        setPostedJobs(jobsRes.data.data || []);
 
         try {
           const internshipsRes = await axios.get(
@@ -95,10 +95,10 @@ const RecruiterProfile = () => {
   const fetchJobsagain = async () => {
     try {
       const jobsRes = await axios.get(
-        "http://localhost:8000/api/v1/job/recruiter",
+        "http://localhost:8000/api/v1/job/recruiter-jobs",
         { withCredentials: true }
       );
-      setPostedJobs(jobsRes.data.jobs || []);
+      setPostedJobs(jobsRes.data.data || []);
     } catch (error) {
       console.error("Error fetching jobs:", error);
       toast.error("Failed to load jobs");
@@ -120,14 +120,13 @@ const RecruiterProfile = () => {
     }
   };
   const handleJobPosted = () => {
-    // Remove fetchAllData() and instead refetch the specific data
     const fetchJobs = async () => {
       try {
         const jobsRes = await axios.get(
-          "http://localhost:8000/api/v1/job/recruiter",
+          "http://localhost:8000/api/v1/job/recruiter-jobs",
           { withCredentials: true }
         );
-        setPostedJobs(jobsRes.data.jobs || []);
+        setPostedJobs(jobsRes.data.data || []);
       } catch (error) {
         console.error("Error fetching jobs:", error);
         toast.error("Failed to load jobs");

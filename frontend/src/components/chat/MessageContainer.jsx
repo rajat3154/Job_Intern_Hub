@@ -1,238 +1,376 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { SendIcon } from "lucide-react";
 import axios from "axios";
 import { setMessages } from "../../redux/messageSlice";
 import { io } from "socket.io-client";
+import { motion } from "framer-motion";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { ChevronLeft, Paperclip, Send, Smile, Video } from "lucide-react";
+import toast from "react-hot-toast";
+import { formatDistanceToNow } from "date-fns";
+import { useNavigate } from "react-router-dom";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
-const MessageContainer = () => {
-      const { selectedUser } = useSelector((state) => state.auth);
-      const { user: authUser } = useSelector((state) => state.auth);
-      const messages = useSelector((state) => state.message.messages) || [];
-      const dispatch = useDispatch();
-      const [newMessage, setNewMessage] = useState("");
-      const [socket, setSocket] = useState(null);
-      const [loading, setLoading] = useState(false);
-      const [error, setError] = useState(null);
-      const [conversations, setConversations] = useState({});
+const MessageContainer = ({ selectedUser, unreadCounts, setUnreadCounts, socket }) => {
+  const { user: authUser } = useSelector((state) => state.auth);
+  const { onlineUsers = [] } = useSelector((state) => state.auth);
+  const { messages } = useSelector((state) => state.message);
+  const dispatch = useDispatch();
+  const [newMessage, setNewMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [conversations, setConversations] = useState({});
+  const messagesEndRef = useRef(null);
+  const navigate = useNavigate();
+  const [isTyping, setIsTyping] = useState(false);
+  const typingTimeoutRef = useRef(null);
+  const chatId = useRef(null);
 
-      // Initialize socket connection
-      useEffect(() => {
-            if (!authUser?._id) return;            const newSocket = io(API_BASE_URL, {
-                  query: {
-                        userId: authUser._id
-                  },
-                  withCredentials: true
-            });
+  const isUserOnline = (userId) => {
+    return Array.isArray(onlineUsers) && onlineUsers.includes(userId);
+  };
 
-            newSocket.on("connect", () => {
-                  console.log("Socket connected");
-                  setError(null);
-            });
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
-            newSocket.on("connect_error", (error) => {
-                  console.error("Socket connection error:", error);
-                  setError("Failed to connect to chat server");
-            });
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
-            setSocket(newSocket);
+  useEffect(() => {
+    if (selectedUser && authUser) {
+      // Create a consistent chat ID by sorting user IDs
+      const userIds = [authUser._id, selectedUser._id].sort();
+      chatId.current = `${userIds[0]}-${userIds[1]}`;
+      
+      // Join the chat room
+      if (socket.current) {
+        socket.current.emit("join_chat", chatId.current);
+      }
+    }
+  }, [selectedUser, authUser]);
 
-            return () => {
-                  newSocket.disconnect();
-            };
-      }, [authUser?._id]);
-
-      // Listen for new messages
-      useEffect(() => {
-            if (!socket) return;
-
-            socket.on("message:new", (message) => {
-                  const conversationId = message.senderId === authUser._id ? message.receiverId : message.senderId;
-                  const currentMessages = conversations[conversationId] || [];
-                  setConversations(prev => ({
-                        ...prev,
-                        [conversationId]: [...currentMessages, message]
-                  }));
-
-                  // Update Redux store if this is the current conversation
-                  if (conversationId === selectedUser?._id) {
-                        dispatch(setMessages([...currentMessages, message]));
-                  }
-            });
-
-            return () => {
-                  socket.off("message:new");
-            };
-      }, [socket, selectedUser?._id, authUser._id, conversations, dispatch]);
-
-      // Fetch messages when both users are available
-      useEffect(() => {
-            const fetchMessages = async () => {
-                  if (!selectedUser?._id || !authUser?._id) return;
-
-                  try {
-                        setLoading(true);
-                        setError(null);
-                        const response = await axios.get(
-                              `${API_BASE_URL}/api/v1/message/${selectedUser._id}`,
-                              { withCredentials: true }
-                        );
-
-                        if (response.data.success) {
-                              const sortedMessages = response.data.messages.sort(
-                                    (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
-                              );
-                              dispatch(setMessages(sortedMessages));
-                              setConversations(prev => ({
-                                    ...prev,
-                                    [selectedUser._id]: sortedMessages
-                              }));
-                        }
-                  } catch (error) {
-                        console.error("Error fetching messages:", error);
-                        setError("Failed to load messages");
-                  } finally {
-                        setLoading(false);
-                  }
-            };
-
-            // If we already have messages for this conversation, use them
-            if (conversations[selectedUser?._id]) {
-                  dispatch(setMessages(conversations[selectedUser._id]));
-            } else {
-                  fetchMessages();
-            }
-      }, [selectedUser?._id, authUser?._id, dispatch, conversations]);
-
-      const handleSendMessage = async (e) => {
-            e.preventDefault();
-            if (!newMessage.trim() || !selectedUser?._id || !authUser?._id) return;
-
-            try {
-                  const response = await axios.post(
-                        `${API_BASE_URL}/api/v1/message/send/${selectedUser._id}`,
-                        { message: newMessage.trim() },
-                        { withCredentials: true }
-                  );
-
-                  if (response.data.success) {
-                        const updatedMessages = [...messages, response.data.newMessage];
-                        dispatch(setMessages(updatedMessages));
-                        setNewMessage("");
-                        
-                        // Emit socket event for real-time
-                        socket?.emit("new_message", {
-                              to: selectedUser._id,
-                              message: response.data.newMessage
-                        });
-                  }
-            } catch (error) {
-                  console.error("Error sending message:", error);
-                  toast.error("Failed to send message");
-            }
+  useEffect(() => {
+    if (socket.current && selectedUser) {
+      const handleTypingStart = ({ userId }) => {
+        if (userId === selectedUser._id) {
+          setIsTyping(true);
+        }
       };
 
-      if (!selectedUser) {
-            return (
-                  <div className="flex-1 flex items-center justify-center bg-gray-900 text-gray-400">
-                        <p>Select a user to start chatting</p>
-                  </div>
-            );
+      const handleTypingStop = ({ userId }) => {
+        if (userId === selectedUser._id) {
+          setIsTyping(false);
+        }
+      };
+
+      socket.current.on("typing:start", handleTypingStart);
+      socket.current.on("typing:stop", handleTypingStop);
+
+      return () => {
+        socket.current.off("typing:start", handleTypingStart);
+        socket.current.off("typing:stop", handleTypingStop);
+      };
+    }
+  }, [selectedUser, socket.current]);
+
+  const handleTyping = () => {
+    if (socket.current && selectedUser) {
+      socket.current.emit("typing:start", { receiverId: selectedUser._id });
+
+      // Clear existing timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
       }
 
-      return (
-            <div className="flex-1 flex flex-col bg-gray-900">
-                  {/* Chat header */}
-                  <div className="p-4 border-b border-gray-800 flex items-center">
-                        <Avatar className="h-10 w-10">
-                              <AvatarImage src={selectedUser.profilePhoto} />
-                              <AvatarFallback>
-                                    {selectedUser.fullName?.charAt(0).toUpperCase()}
-                              </AvatarFallback>
-                        </Avatar>
-                        <div className="ml-3">
-                              <h3 className="font-medium text-white">{selectedUser.fullName}</h3>
-                              <p className="text-xs text-gray-400">
-                                    {selectedUser.isOnline ? "Online" : "Offline"}
-                              </p>
-                        </div>
-                  </div>
+      // Set new timeout
+      typingTimeoutRef.current = setTimeout(() => {
+        socket.current.emit("typing:stop", { receiverId: selectedUser._id });
+      }, 2000);
+    }
+  };
 
-                  {/* Error message */}
-                  {error && (
-                        <div className="p-2 bg-red-500/10 border border-red-500/20 text-red-500 text-sm text-center">
-                              {error}
-                        </div>
-                  )}
+  // Cleanup typing timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, []);
 
-                  {/* Messages */}
-                  <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                        {loading ? (
-                              <div className="flex justify-center items-center h-20">
-                                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-                              </div>
-                        ) : Array.isArray(messages) && messages.length > 0 ? (
-                              messages.map((message) => (
-                                    <div
-                                          key={message._id}
-                                          className={`flex ${
-                                                message.senderId === authUser._id
-                                                      ? "justify-end"
-                                                      : "justify-start"
-                                          }`}
-                                    >
-                                          <div
-                                                className={`max-w-xs md:max-w-md rounded-lg px-4 py-2 ${
-                                                      message.senderId === authUser._id
-                                                            ? "bg-blue-600 rounded-tr-none"
-                                                            : "bg-gray-800 rounded-tl-none"
-                                                }`}
-                                          >
-                                                <p>{message.message}</p>
-                                                <p className="text-xs text-gray-300 text-right mt-1">
-                                                      {new Date(message.createdAt).toLocaleTimeString([], {
-                                                            hour: "2-digit",
-                                                            minute: "2-digit",
-                                                      })}
-                                                </p>
-                                          </div>
-                                    </div>
-                              ))
-                        ) : (
-                              <div className="flex justify-center items-center h-20 text-gray-400">
-                                    <p>No messages yet. Start the conversation!</p>
-                              </div>
-                        )}
-                  </div>
+  useEffect(() => {
+    if (socket.current && selectedUser) {
+      const handler = (newMessage) => {
+        if (
+          (newMessage.senderId === selectedUser._id &&
+            newMessage.receiverId === authUser._id) ||
+          (newMessage.senderId === authUser._id &&
+            newMessage.receiverId === selectedUser._id)
+        ) {
+          const updatedMessages = [...messages, newMessage];
+          setConversations((prev) => ({
+            ...prev,
+            [selectedUser._id]: updatedMessages,
+          }));
+          dispatch(setMessages(updatedMessages));
+          scrollToBottom();
+        }
+      };
+      socket.current.on("message:new", handler);
+      return () => {
+        socket.current.off("message:new", handler);
+      };
+    }
+  }, [selectedUser, authUser._id, dispatch, messages]);
 
-                  {/* Message input */}
-                  <div className="p-4 border-t border-gray-800">
-                        <form onSubmit={handleSendMessage} className="flex items-center gap-2">
-                              <input
-                                    type="text"
-                                    value={newMessage}
-                                    onChange={(e) => setNewMessage(e.target.value)}
-                                    placeholder="Type a message..."
-                                    className="flex-1 bg-gray-800 border-gray-700 text-white rounded-md px-4 py-2"
-                              />
-                              <button
-                                    type="submit"
-                                    disabled={!newMessage.trim()}
-                                    className={`p-2 rounded-md ${
-                                          newMessage.trim()
-                                                ? "bg-blue-600 hover:bg-blue-700 text-white"
-                                                : "bg-gray-700 text-gray-400 cursor-not-allowed"
-                                    }`}
-                              >
-                                    <SendIcon className="h-5 w-5" />
-                              </button>
-                        </form>
-                  </div>
-            </div>
+  useEffect(() => {
+    if (!selectedUser?._id) return;
+
+    const fetchMessages = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.get(
+          `${API_BASE_URL}/api/v1/message/${selectedUser._id}`,
+          { withCredentials: true }
+        );
+
+        if (response.data.success) {
+          const fetchedMessages = response.data.messages;
+          setConversations((prev) => ({
+            ...prev,
+            [selectedUser._id]: fetchedMessages,
+          }));
+          dispatch(setMessages(fetchedMessages));
+        }
+      } catch (error) {
+        console.error("Error fetching messages:", error);
+        toast.error("Failed to load messages");
+        dispatch(setMessages([]));
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMessages();
+  }, [selectedUser?._id, dispatch]);
+
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    if (!newMessage.trim() || !selectedUser?._id) return;
+
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/api/v1/message/send/${selectedUser._id}`,
+        { message: newMessage.trim() },
+        { withCredentials: true }
       );
+
+      if (response.data.success && response.data.newMessage) {
+        const currentMessages = conversations[selectedUser._id] || [];
+        const updatedMessages = [...currentMessages, response.data.newMessage];
+
+        setConversations((prev) => ({
+          ...prev,
+          [selectedUser._id]: updatedMessages,
+        }));
+
+        dispatch(setMessages(updatedMessages));
+        setNewMessage("");
+        scrollToBottom();
+
+        // Emit socket event for real-time update
+        socket.current?.emit("new_message", response.data.newMessage);
+      }
+    } catch (error) {
+      console.error("Error sending message:", error);
+      toast.error("Failed to send message");
+    }
+  };
+
+  if (!selectedUser) {
+    return (
+      <div className="flex-1 flex items-center justify-center bg-black">
+        <p className="text-gray-400">Select a user to start chatting</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex-1 flex flex-col bg-black">
+      {/* Chat header */}
+      <div className="p-4 border-b border-t border-r border-gray-800 flex items-center bg-gray-900">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="sm:hidden mr-2 text-gray-400 hover:text-white"
+          onClick={() => dispatch(setSelectedUser(null))}
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </Button>
+
+        <div
+          className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
+          onClick={() => navigate(`/profile/${selectedUser.role}/${selectedUser._id}`)}
+        >
+          <Avatar className="h-10 w-10 border-2 border-blue-500">
+            <AvatarImage src={selectedUser.profilePhoto} />
+            <AvatarFallback>{selectedUser.fullName?.charAt(0)}</AvatarFallback>
+          </Avatar>
+
+          <div className="ml-3">
+            <h3 className="font-semibold text-white hover:text-blue-400 transition-colors">
+              {selectedUser.fullName}
+            </h3>
+            <div className="flex items-center">
+              <div
+                className={`h-2 w-2 rounded-full mr-1 ${
+                  isUserOnline(selectedUser._id) ? "bg-green-500" : "bg-gray-500"
+                }`}
+              ></div>
+              <p className="text-xs text-gray-400">
+                {isTyping 
+                  ? "typing..."
+                  : isUserOnline(selectedUser._id) 
+                    ? "Online" 
+                    : `Last seen ${formatDistanceToNow(new Date(selectedUser.lastSeen), { addSuffix: true })}`}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="ml-auto">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-gray-400 hover:text-blue-400"
+          >
+            <Video className="h-5 w-5" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Error message */}
+      {error && (
+        <div className="p-2 bg-red-500/10 border border-red-500/20 text-red-400 text-sm text-center">
+          {error}
+        </div>
+      )}
+
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 border-r border-gray-800">
+        {loading ? (
+          <div className="flex justify-center items-center h-full">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+          </div>
+        ) : messages.length > 0 ? (
+          <>
+            {messages.map((message) => {
+              const isSender = message.senderId === authUser._id;
+              return (
+                <motion.div
+                  key={message._id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`flex ${isSender ? "justify-end" : "justify-start"}`}
+                >
+                  <div
+                    className={`max-w-xs md:max-w-md rounded-lg px-4 py-2 relative ${
+                      isSender
+                        ? "bg-blue-600 rounded-tr-none"
+                        : "bg-gray-800 rounded-tl-none"
+                    }`}
+                  >
+                    <p className="text-white">{message.message}</p>
+                    <div className="flex items-center justify-end mt-1 gap-1">
+                      <p className="text-xs text-gray-300 text-right">
+                        {new Date(message.createdAt).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                      {isSender && (
+                        <span
+                          className="ml-1 flex items-center"
+                          title={message.read ? "Read" : "Delivered"}
+                        >
+                          {message.read ? (
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              viewBox="0 0 24 24"
+                              fill="currentColor"
+                              className="w-4 h-4 text-black"
+                            >
+                              <path d="M18.7 3.3c-.4-.4-1-.4-1.4 0L9 11.6 6.7 9.3c-.4-.4-1-.4-1.4 0s-.4 1 0 1.4l3 3c.2.2.4.3.7.3.3 0 .5-.1.7-.3l9-9c.4-.4.4-1 0-1.4z" />
+                              <path d="M18.7 3.3c-.4-.4-1-.4-1.4 0L9 11.6 6.7 9.3c-.4-.4-1-.4-1.4 0s-.4 1 0 1.4l3 3c.2.2.4.3.7.3.3 0 .5-.1.7-.3l9-9c.4-.4.4-1 0-1.4z" transform="translate(0 4)" />
+                            </svg>
+                          ) : (
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              viewBox="0 0 24 24"
+                              fill="currentColor"
+                              className="w-4 h-4 text-white"
+                            >
+                              <path d="M18.7 3.3c-.4-.4-1-.4-1.4 0L9 11.6 6.7 9.3c-.4-.4-1-.4-1.4 0s-.4 1 0 1.4l3 3c.2.2.4.3.7.3.3 0 .5-.1.7-.3l9-9c.4-.4.4-1 0-1.4z" />
+                              <path d="M18.7 3.3c-.4-.4-1-.4-1.4 0L9 11.6 6.7 9.3c-.4-.4-1-.4-1.4 0s-.4 1 0 1.4l3 3c.2.2.4.3.7.3.3 0 .5-.1.7-.3l9-9c.4-.4.4-1 0-1.4z" transform="translate(0 4)" />
+                            </svg>
+                          )}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+            {isTyping && (
+              <div className="flex items-center space-x-2 text-gray-400 text-sm">
+                <div className="flex space-x-1">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                </div>
+                <span>{selectedUser.fullName} is typing...</span>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="flex justify-center items-center h-full">
+            <p className="text-gray-400">No messages yet. Start the conversation!</p>
+          </div>
+        )}
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Message input */}
+      <div className="p-4 border-t border-r border-gray-800">
+        <form onSubmit={handleSendMessage} className="flex items-center space-x-2">
+          <Input
+            type="text"
+            placeholder="Type a message..."
+            value={newMessage}
+            onChange={(e) => {
+              setNewMessage(e.target.value);
+              handleTyping();
+            }}
+            className="flex-1 bg-gray-900 border-gray-700 text-white"
+          />
+          <Button
+            type="submit"
+            size="icon"
+            className="bg-blue-600 hover:bg-blue-700"
+            disabled={!newMessage.trim()}
+          >
+            <Send className="h-5 w-5" />
+          </Button>
+        </form>
+      </div>
+    </div>
+  );
 };
 
 export default MessageContainer;

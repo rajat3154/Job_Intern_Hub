@@ -18,7 +18,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Skeleton } from "./ui/skeleton";
 import { Badge } from "./ui/badge";
 
+import { useDispatch } from "react-redux";
+import { setSelectedUser } from "../redux/authSlice";
+
 const Discover = () => {
+  const dispatch = useDispatch();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -79,6 +83,7 @@ const Discover = () => {
       email: user.email,
       role: user.userType,
       profilePhoto: user.profile?.profilePhoto,
+      lastSeen: user.lastSeen || null,
       identifier:
         user.userType === "student"
           ? "Student"
@@ -86,6 +91,7 @@ const Discover = () => {
       isOnline: false,
     };
     localStorage.setItem("selectedUser", JSON.stringify(selectedUser));
+    dispatch(setSelectedUser(selectedUser));
     navigate("/messages");
   };
 
@@ -156,31 +162,36 @@ const Discover = () => {
                   className="bg-gradient-to-b from-gray-900/80 to-gray-900/50 rounded-xl border border-gray-800/50 p-6 hover:border-blue-500/30 hover:shadow-lg hover:shadow-blue-500/10 transition-all"
                 >
                   <div className="flex items-center gap-4 mb-4">
-                    <Avatar className="h-16 w-16 border-2 border-blue-500/50">
-                      <AvatarImage src={user.profile?.profilePhoto} />
-                      <AvatarFallback className="bg-gray-800 text-blue-400 font-medium">
-                        {user.displayName?.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <h3 className="font-semibold text-white truncate max-w-[150px]">
-                        {user.displayName}
-                      </h3>
-                      <Badge
-                        variant="outline"
-                        className={`mt-1 text-xs ${
-                          user.userType === "student"
-                            ? "bg-blue-900/30 text-blue-300 border-blue-800"
-                            : "bg-purple-900/30 text-purple-300 border-purple-800"
-                        }`}
-                      >
-                        {user.userType === "student" ? (
-                          <GraduationCap className="h-3 w-3 mr-1" />
-                        ) : (
-                          <Briefcase className="h-3 w-3 mr-1" />
-                        )}
-                        {user.userType}
-                      </Badge>
+                    <div
+                      className="flex items-center gap-4 cursor-pointer group"
+                      onClick={() => navigate(`/profile/${user.userType}/${user._id}`)}
+                    >
+                      <Avatar className="h-16 w-16 border-2 border-blue-500/50 group-hover:border-blue-500 transition-colors">
+                        <AvatarImage src={user.profile?.profilePhoto} />
+                        <AvatarFallback className="bg-gray-800 text-blue-400 font-medium">
+                          {user.displayName?.charAt(0)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <h3 className="font-semibold text-white truncate max-w-[150px] group-hover:text-blue-400 transition-colors">
+                          {user.displayName}
+                        </h3>
+                        <Badge
+                          variant="outline"
+                          className={`mt-1 text-xs ${
+                            user.userType === "student"
+                              ? "bg-blue-900/30 text-blue-300 border-blue-800"
+                              : "bg-purple-900/30 text-purple-300 border-purple-800"
+                          }`}
+                        >
+                          {user.userType === "student" ? (
+                            <GraduationCap className="h-3 w-3 mr-1" />
+                          ) : (
+                            <Briefcase className="h-3 w-3 mr-1" />
+                          )}
+                          {user.userType}
+                        </Badge>
+                      </div>
                     </div>
                   </div>
 

@@ -1,28 +1,19 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Button } from "./ui/button";
 import { Bookmark, BookmarkCheck } from "lucide-react";
 
-const LatestJobCards = ({ job, onDetails, onSave }) => {
-  const [isSaved, setIsSaved] = useState(false);
-
-  useEffect(() => {
-    // Reset saved state on job change
-    setIsSaved(false);
-  }, [job._id]);
-
-  // Optional: you can handle internal saved state update here or lift state up.
-  // For simplicity, update when parent calls onSave:
+const LatestJobCards = ({ job, onDetails, onSave, isSaved }) => {
   const handleSaveClick = (e) => {
     e.stopPropagation();
     if (onSave) {
-      onSave(job._id, setIsSaved);
+      onSave();
     }
   };
 
   const handleViewDetailsClick = (e) => {
     e.stopPropagation();
     if (onDetails) {
-      onDetails(job._id);
+      onDetails();
     }
   };
 

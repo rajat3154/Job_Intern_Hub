@@ -8,6 +8,8 @@ export const sendMessage = async (req, res) => {
             const senderId = req.user._id;
             const receiverId = req.params.id;
 
+            console.log("Sending message:", { message, senderId, receiverId });
+
             if (!message || !senderId || !receiverId) {
                   return res.status(400).json({
                         success: false,
@@ -44,6 +46,8 @@ export const sendMessage = async (req, res) => {
                   io.to(receiverSocketId).emit("message:new", newMessage);
             }
 
+            console.log("Message sent successfully:", newMessage);
+
             return res.status(201).json({
                   success: true,
                   message: "Message sent successfully",
@@ -53,7 +57,7 @@ export const sendMessage = async (req, res) => {
             console.error("Error in sendMessage:", error);
             return res.status(500).json({
                   success: false,
-                  error: "Failed to send message",
+                  error: error.message || "Failed to send message",
             });
       }
 };

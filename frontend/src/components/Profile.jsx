@@ -14,6 +14,8 @@ import {
   GraduationCap,
   Link as LinkIcon,
   Users,
+  Bookmark,
+  BookmarkCheck,
 } from "lucide-react";
 import { Badge } from "./ui/badge";
 import UpdateProfileDialog from "./UpdateProfileDialog";
@@ -31,9 +33,18 @@ import {
   TableHeader,
   TableRow,
 } from "./ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+import LatestJobCards from "./LatestJobCards";
+import LatestInternshipCards from "./LatestInternshipCards";
+import { formatDistanceToNow } from 'date-fns';
+import FollowButton from "./FollowButton";
+import { useDispatch } from "react-redux";
+import { setSelectedUser } from "../redux/authSlice";
+// Removed duplicate import of Button to fix redeclaration error
 
 const Profile = () => {
   const [open, setOpen] = useState(false);
+  const dispatch = useDispatch();
   const [followersOpen, setFollowersOpen] = useState(false);
   const [followingOpen, setFollowingOpen] = useState(false);
   const [profileUser, setProfileUser] = useState(null);
@@ -46,6 +57,10 @@ const Profile = () => {
   const [appliedInternships, setAppliedInternships] = useState([]);
   const [jobsLoading, setJobsLoading] = useState(true);
   const [internshipsLoading, setInternshipsLoading] = useState(true);
+  const [savedJobs, setSavedJobs] = useState([]);
+  const [savedInternships, setSavedInternships] = useState([]);
+  const [savedJobsLoading, setSavedJobsLoading] = useState(true);
+  const [savedInternshipsLoading, setSavedInternshipsLoading] = useState(true);
   const { user: currentUser } = useSelector((store) => store.auth);
   const { userId, userType } = useParams();
   const navigate = useNavigate();
@@ -168,10 +183,52 @@ const Profile = () => {
     }
   };
 
+  const fetchSavedJobs = async () => {
+    try {
+      setSavedJobsLoading(true);
+      const response = await axios.get(
+        "http://localhost:8000/api/v1/job/saved",
+        {
+          withCredentials: true,
+        }
+      );
+      if (response.data.success) {
+        setSavedJobs(response.data.savedJobs);
+      }
+    } catch (error) {
+      console.error("Error fetching saved jobs:", error);
+      toast.error("Failed to load saved jobs");
+    } finally {
+      setSavedJobsLoading(false);
+    }
+  };
+
+  const fetchSavedInternships = async () => {
+    try {
+      setSavedInternshipsLoading(true);
+      const response = await axios.get(
+        "http://localhost:8000/api/v1/internship/saved",
+        {
+          withCredentials: true,
+        }
+      );
+      if (response.data.success) {
+        setSavedInternships(response.data.savedInternships);
+      }
+    } catch (error) {
+      console.error("Error fetching saved internships:", error);
+      toast.error("Failed to load saved internships");
+    } finally {
+      setSavedInternshipsLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (currentUser?._id && currentUser?.role === "student") {
       fetchAppliedJobs();
       fetchAppliedInternships();
+      fetchSavedJobs();
+      fetchSavedInternships();
     }
   }, [currentUser]);
 
@@ -206,20 +263,22 @@ const Profile = () => {
     };
   }, [followersOpen, followingOpen]);
 
-  const handleMessageClick = () => {
+  const handleMessageClick = (user) => {
     const selectedUser = {
-      _id: profileUser._id,
-      fullName: profileUser.fullname || profileUser.companyname,
-      email: profileUser.email,
-      role: profileUser.role.toLowerCase(),
-      profilePhoto: profileUser.profile?.profilePhoto,
+      _id: user._id,
+      fullName: user.displayName || user.fullname || user.companyname,
+      email: user.email,
+      role: user.userType || user.role?.toLowerCase(),
+      profilePhoto: user.profile?.profilePhoto,
+      lastSeen: user.lastSeen || null,
       identifier:
-        profileUser.role === "STUDENT"
+        (user.userType || user.role)?.toLowerCase() === "student"
           ? "Student"
-          : profileUser.companyname || "Recruiter",
+          : user.companyname || "Recruiter",
       isOnline: false,
     };
     localStorage.setItem("selectedUser", JSON.stringify(selectedUser));
+    dispatch(setSelectedUser(selectedUser));
     navigate("/messages");
   };
 
@@ -249,6 +308,47 @@ const Profile = () => {
       navigate("/login");
     }
   }, [loading, currentUser, userId, navigate]);
+
+  const handleSaveClick = async (itemId, type) => {
+    if (!currentUser) {
+      toast.error("Please login to save items");
+      return;
+    }
+
+    try {
+      const endpoint = type === 'job' 
+        ? `http://localhost:8000/api/v1/job/save-job/${itemId}`
+        : `http://localhost:8000/api/v1/internship/save-internship/${itemId}`;
+
+      const response = await axios.post(endpoint, {}, { withCredentials: true });
+
+      if (response.data.success) {
+        toast.success(response.data.message);
+        // Refresh the saved items
+        if (type === 'job') {
+          fetchSavedJobs();
+        } else {
+          fetchSavedInternships();
+        }
+      }
+    } catch (error) {
+      console.error(`Error ${type === 'job' ? 'saving job' : 'saving internship'}:`, error);
+      toast.error(`Failed to ${type === 'job' ? 'save job' : 'save internship'}`);
+    }
+  };
+
+  // Add this useEffect after the other useEffects
+  useEffect(() => {
+    if (currentUser?.role === "student") {
+      fetchSavedJobs();
+      fetchSavedInternships();
+    }
+  }, [currentUser]);
+
+  const getLastSeenText = (lastSeen) => {
+    if (!lastSeen) return 'Never';
+    return formatDistanceToNow(new Date(lastSeen), { addSuffix: true });
+  };
 
   if (loading) {
     return (
@@ -293,35 +393,39 @@ const Profile = () => {
                   {profileUser?.profile?.headline ||
                     (isStudent ? "Student" : "Recruiter")}
                 </p>
+                <p className="text-sm text-gray-500 mt-1">
+                </p>
               </div>
             </div>
-
-            <div className="flex gap-3 w-full md:w-auto">
-              {!isOwnProfile && (
-                <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleMessageClick}
-                    className="text-blue-400 border-blue-400 hover:bg-blue-400/10"
-                  >
-                    <MessageSquare className="h-4 w-4 mr-2" />
-                    Message
-                  </Button>
-                </>
-              )}
-              {isOwnProfile && (
+            {!isOwnProfile && (
+              <div className="flex items-center gap-4">
                 <Button
-                  onClick={() => setOpen(true)}
                   variant="outline"
                   size="sm"
-                  className="text-blue-400 border-blue-400 hover:bg-blue-400/10"
+                  className="flex-1 text-blue-400 border-blue-400/30 hover:bg-blue-400/10 hover:text-blue-300"
+                  onClick={() =>
+                    handleMessageClick({
+                      _id: profileUser._id,
+                      displayName: profileUser.fullname || profileUser.companyname,
+                      email: profileUser.email,
+                      userType: profileUser.role?.toLowerCase(),
+                      profile: { profilePhoto: profileUser.profile?.profilePhoto },
+                      companyname: profileUser.companyname,
+                    })
+                  }
                 >
-                  <Pen className="h-4 w-4 mr-2" />
-                  Edit Profile
+                  <MessageSquare className="inline-block mr-2 h-5 w-5" />
+                  Message
                 </Button>
-              )}
-            </div>
+                <FollowButton
+                  userId={profileUser?._id}
+                  userType={profileUser?.role?.toLowerCase()}
+                  className="flex-1 bg-gray-800 hover:bg-gray-700 border-gray-700"
+                />
+              </div>
+            )}
+
+            {/* ... existing buttons ... */}
           </div>
 
           {/* Bio */}
@@ -745,6 +849,187 @@ const Profile = () => {
                 )}
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Saved Items Section */}
+        {isOwnProfile && currentUser?.role === "student" && (
+          <div className="container mx-auto px-4 py-8">
+            <h2 className="text-2xl font-bold mb-6 text-blue-400">Saved Items</h2>
+            <Tabs defaultValue="jobs" className="w-full">
+              <TabsList className="inline-flex h-12 items-center justify-center rounded-lg bg-gray-800 p-1 mb-8 w-full">
+                <TabsTrigger 
+                  value="jobs" 
+                  className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-6 py-2.5 text-lg font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-blue-500 data-[state=active]:text-white text-blue-400"
+                >
+                  <Bookmark className="w-5 h-5 mr-2" />
+                  Saved Jobs
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="internships" 
+                  className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-6 py-2.5 text-lg font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-blue-500 data-[state=active]:text-white text-blue-400"
+                >
+                  <Bookmark className="w-5 h-5 mr-2" />
+                  Saved Internships
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="jobs">
+                {savedJobsLoading ? (
+                  <div className="flex justify-center items-center h-40">
+                    <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+                  </div>
+                ) : savedJobs.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {savedJobs.map((job) => (
+                      <div
+                        key={job._id}
+                        className="relative p-6 rounded-lg shadow-lg bg-black text-white border border-blue-500 hover:bg-gray-800 cursor-pointer transition duration-300"
+                      >
+                        <div className="absolute top-3 right-4 flex gap-2">
+                          <Button
+                            onClick={() => navigate(`/job/description/${job._id}`)}
+                            variant="outline"
+                            className="px-3 py-1 bg-purple-500 border-purple-500 text-white text-sm font-bold rounded-md hover:bg-purple-600 cursor-pointer"
+                          >
+                            View Details
+                          </Button>
+                          <Button
+                            onClick={() => handleSaveClick(job._id, 'job')}
+                            variant="outline"
+                            className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-sm font-bold rounded-md flex items-center gap-2"
+                          >
+                            <BookmarkCheck size={16} />
+                            Saved
+                          </Button>
+                        </div>
+
+                        <div className="mt-12">
+                          <div className="flex items-center justify-between mb-4">
+                            <p className="text-sm text-gray-400">
+                              {new Date(job.createdAt).toDateString()}
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-3 mb-6">
+                            <img
+                              src={job.recruiter?.profile?.profilePhoto || "https://via.placeholder.com/50"}
+                              alt="Company Logo"
+                              className="w-12 h-12 rounded-full"
+                            />
+                            <div>
+                              <h1 className="font-semibold text-lg">{job.recruiter?.companyname}</h1>
+                              <p className="text-sm text-gray-400">{job.location}</p>
+                            </div>
+                          </div>
+
+                          <div className="mb-4">
+                            <h1 className="font-bold text-xl mb-3">{job.title}</h1>
+                            <p className="text-sm text-gray-300 line-clamp-3">
+                              {job.description}
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-3 mb-3">
+                            <span className="px-2 py-1 bg-blue-400 text-black text-sm font-bold rounded-md">
+                              {job.position} Positions
+                            </span>
+                            <span className="px-2 py-1 bg-red-600 text-white text-sm font-bold rounded-md">
+                              {job.jobType}
+                            </span>
+                            <span className="px-2 py-1 bg-yellow-400 text-black text-sm font-bold rounded-md">
+                              {job.salary}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center text-gray-400 py-8">
+                    No saved jobs yet
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="internships">
+                {savedInternshipsLoading ? (
+                  <div className="flex justify-center items-center h-40">
+                    <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+                  </div>
+                ) : savedInternships.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {savedInternships.map((internship) => (
+                      <div
+                        key={internship._id}
+                        className="relative p-6 rounded-lg shadow-lg bg-black text-white border border-blue-500 hover:bg-gray-800 cursor-pointer transition duration-300"
+                      >
+                        <div className="absolute top-3 right-4 flex gap-2">
+                          <Button
+                            onClick={() => navigate(`/internship/description/${internship._id}`)}
+                            variant="outline"
+                            className="px-3 py-1 bg-purple-500 border-purple-500 text-white text-sm font-bold rounded-md hover:bg-purple-600 cursor-pointer"
+                          >
+                            View Details
+                          </Button>
+                          <Button
+                            onClick={() => handleSaveClick(internship._id, 'internship')}
+                            variant="outline"
+                            className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-sm font-bold rounded-md flex items-center gap-2"
+                          >
+                            <BookmarkCheck size={16} />
+                            Saved
+                          </Button>
+                        </div>
+
+                        <div className="mt-12">
+                          <div className="flex items-center justify-between mb-4">
+                            <p className="text-sm text-gray-400">
+                              {new Date(internship.createdAt).toDateString()}
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-3 mb-6">
+                            <img
+                              src={internship.recruiter?.profile?.profilePhoto || "https://via.placeholder.com/50"}
+                              alt="Company Logo"
+                              className="w-12 h-12 rounded-full"
+                            />
+                            <div>
+                              <h1 className="font-semibold text-lg">{internship.recruiter?.companyname}</h1>
+                              <p className="text-sm text-gray-400">{internship.location}</p>
+                            </div>
+                          </div>
+
+                          <div className="mb-4">
+                            <h1 className="font-bold text-xl mb-3">{internship.title}</h1>
+                            <p className="text-sm text-gray-300 line-clamp-3">
+                              {internship.description}
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-3 mb-3">
+                            <span className="px-2 py-1 bg-blue-400 text-black text-sm font-bold rounded-md">
+                              {internship.duration}
+                            </span>
+                            <span className="px-2 py-1 bg-red-600 text-white text-sm font-bold rounded-md">
+                              {internship.type}
+                            </span>
+                            <span className="px-2 py-1 bg-yellow-400 text-black text-sm font-bold rounded-md">
+                              {internship.stipend}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center text-gray-400 py-8">
+                    No saved internships yet
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
           </div>
         )}
       </div>

@@ -5,7 +5,7 @@ const initialState = {
       loading: false,
       otherUsers: null,
       selectedUser: null,
-      onlineUsers: null,
+      onlineUsers: [],
       students: [],
       recruiters: [],
 };
@@ -28,8 +28,18 @@ const authSlice = createSlice({
                   state.selectedUser = action.payload;
             },
             setOnlineUsers: (state, action) => {
-                  state.onlineUsers = action.payload;
-              }
+                  const { userId, isOnline } = action.payload;
+                  if (!Array.isArray(state.onlineUsers)) {
+                        state.onlineUsers = [];
+                  }
+                  if (isOnline) {
+                        if (!state.onlineUsers.includes(userId)) {
+                              state.onlineUsers.push(userId);
+                        }
+                  } else {
+                        state.onlineUsers = state.onlineUsers.filter(id => id !== userId);
+                  }
+            }
       },
 });
 

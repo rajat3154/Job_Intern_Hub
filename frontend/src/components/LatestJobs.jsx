@@ -7,6 +7,7 @@ import { useSearch } from "../context/SearchContext";
 
 const LatestJobs = () => {
   const [latestJobs, setLatestJobs] = useState([]);
+  const [savedJobs, setSavedJobs] = useState({});
   const navigate = useNavigate();
   const { user } = useSelector((store) => store.auth);
   const { searchQuery } = useSearch();
@@ -21,6 +22,12 @@ const LatestJobs = () => {
       const data = await response.json();
       if (data.success && Array.isArray(data.jobs)) {
         setLatestJobs(data.jobs);
+        // Initialize saved status for each job
+        const savedStatus = {};
+        data.jobs.forEach(job => {
+          savedStatus[job._id] = false;
+        });
+        setSavedJobs(savedStatus);
       }
     } catch (error) {
       console.error("Error fetching latest jobs:", error);
@@ -57,7 +64,7 @@ const LatestJobs = () => {
     navigate(`/job/description/${jobId}`);
   };
 
-  const handleSaveClick = async (jobId, setIsSaved) => {
+  const handleSaveClick = async (jobId) => {
     if (!user) {
       navigate("/signup");
       return;
@@ -77,8 +84,11 @@ const LatestJobs = () => {
 
       const data = await response.json();
       if (data.success) {
-        setIsSaved(true);
-        toast.success(data.message || "Job saved successfully");
+        setSavedJobs(prev => ({
+          ...prev,
+          [jobId]: !prev[jobId]
+        }));
+        toast.success(data.message || (savedJobs[jobId] ? "Job unsaved" : "Job saved"));
       }
     } catch (error) {
       console.error("Error saving job:", error);
@@ -105,7 +115,8 @@ const LatestJobs = () => {
                 key={job._id}
                 job={job}
                 onDetails={() => handleJobClick(job._id)}
-                onSave={(setIsSaved) => handleSaveClick(job._id, setIsSaved)}
+                onSave={() => handleSaveClick(job._id)}
+                isSaved={savedJobs[job._id] || false}
               />
             ))
           )}

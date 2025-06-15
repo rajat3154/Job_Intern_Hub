@@ -1,6 +1,10 @@
 import { Server } from "socket.io";
 import http from "http";
 import express from "express";
+import { Message } from "../models/message.model.js";
+import { Student } from "../models/student.model.js";
+import { Recruiter } from "../models/recruiter.model.js";
+import { setIO } from "../utils/socket.js";
 
 const app = express();
 const server = http.createServer(app);
@@ -21,10 +25,13 @@ export const initSocket = (server) => {
             pingTimeout: 60000
       });
 
+      // Set io instance in utility
+      setIO(io);
+
       io.on("connection", (socket) => {
             console.log("New client connected:", socket.id);
 
-            socket.on("setup", (userId) => {
+            socket.on("setup", async (userId) => {
                   socket.userId = userId;
                   socket.join(userId);
                   userSockets.set(userId, socket.id);
@@ -32,10 +39,49 @@ export const initSocket = (server) => {
                   io.emit("user:status", { userId, isOnline: true });
             });
 
-            socket.on("disconnect", () => {
+            socket.on("typing:start", ({ receiverId }) => {
+                  const receiverSocket = userSockets.get(receiverId);
+                  if (receiverSocket) {
+                        io.to(receiverSocket).emit("typing:start", { 
+                              userId: socket.userId,
+                              chatId: `${socket.userId}-${receiverId}`
+                        });
+                  }
+            });
+
+            socket.on("typing:stop", ({ receiverId }) => {
+                  const receiverSocket = userSockets.get(receiverId);
+                  if (receiverSocket) {
+                        io.to(receiverSocket).emit("typing:stop", { 
+                              userId: socket.userId,
+                              chatId: `${socket.userId}-${receiverId}`
+                        });
+                  }
+            });
+
+            socket.on("disconnect", async () => {
                   if (socket.userId) {
-                        userSockets.delete(socket.userId);
-                        io.emit("user:status", { userId: socket.userId, isOnline: false });
+                        const userId = socket.userId;
+                        userSockets.delete(userId);
+                        
+                        // Update lastSeen timestamp
+                        try {
+                              const student = await Student.findById(userId);
+                              if (student) {
+                                    student.lastSeen = new Date();
+                                    await student.save();
+                              } else {
+                                    const recruiter = await Recruiter.findById(userId);
+                                    if (recruiter) {
+                                          recruiter.lastSeen = new Date();
+                                          await recruiter.save();
+                                    }
+                              }
+                        } catch (error) {
+                              console.error("Error updating lastSeen:", error);
+                        }
+
+                        io.emit("user:status", { userId, isOnline: false });
                   }
             });
 
@@ -48,6 +94,30 @@ export const initSocket = (server) => {
                   const receiverSocket = userSockets.get(message.receiverId);
                   if (receiverSocket) {
                         io.to(receiverSocket).emit("message_received", message);
+                  }
+            });
+
+            socket.on("mark_messages_read", async ({ senderId, receiverId }) => {
+                  try {
+                        // Update all unread messages from this sender to read
+                        await Message.updateMany(
+                              {
+                                    senderId,
+                                    receiverId,
+                                    read: false
+                              },
+                              { $set: { read: true } }
+                        );
+
+                        // Notify the sender that their messages have been read
+                        const senderSocket = userSockets.get(senderId);
+                        if (senderSocket) {
+                              io.to(senderSocket).emit("messages_read", {
+                                    readerId: receiverId
+                              });
+                        }
+                  } catch (error) {
+                        console.error("Error marking messages as read:", error);
                   }
             });
       });
