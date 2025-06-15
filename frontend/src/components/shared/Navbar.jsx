@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "../ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
@@ -9,14 +9,29 @@ import { USER_API_END_POINT } from "@/utils/constant";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
 import { setUser } from "@/redux/authSlice";
+import { getSocket } from "../../socket/socket";
 
 const Navbar = () => {
   const { user } = useSelector((store) => store.auth);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
+  useEffect(() => {
+    if (user) {
+      // Set up socket connection when user is logged in
+      const socket = getSocket();
+      socket.emit("setup", user._id);
+    }
+  }, [user]);
+
   const logoutHandler = async () => {
     try {
+      // Disconnect socket before logging out
+      if (user) {
+        const socket = getSocket();
+        socket.disconnect();
+      }
+
       const res = await axios.get(`${USER_API_END_POINT}/logout`, {
         withCredentials: true,
       });

@@ -14,20 +14,25 @@ const LatestJobs = () => {
 
   const fetchLatestJobs = async () => {
     try {
+      console.log("Fetching latest jobs...");
       const response = await fetch("http://localhost:8000/api/v1/job/latest", {
         method: "GET",
         headers: { "Content-Type": "application/json" },
       });
 
       const data = await response.json();
-      if (data.success && Array.isArray(data.jobs)) {
-        setLatestJobs(data.jobs);
+      console.log("Latest jobs response:", data);
+      if (data.success && Array.isArray(data.data)) {
+        setLatestJobs(data.data);
         // Initialize saved status for each job
         const savedStatus = {};
-        data.jobs.forEach(job => {
+        data.data.forEach(job => {
           savedStatus[job._id] = false;
         });
         setSavedJobs(savedStatus);
+        console.log("Latest jobs set in state:", data.data);
+      } else {
+        console.warn("No jobs found or response unsuccessful", data);
       }
     } catch (error) {
       console.error("Error fetching latest jobs:", error);
@@ -37,6 +42,8 @@ const LatestJobs = () => {
   useEffect(() => {
     fetchLatestJobs();
   }, []);
+
+  console.log("Rendering LatestJobs component", { latestJobs, savedJobs });
 
   const filteredJobs = latestJobs.filter((job) => {
     if (!searchQuery) return true;

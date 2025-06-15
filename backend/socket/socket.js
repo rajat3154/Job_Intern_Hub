@@ -5,6 +5,7 @@ import { Message } from "../models/message.model.js";
 import { Student } from "../models/student.model.js";
 import { Recruiter } from "../models/recruiter.model.js";
 import { setIO } from "../utils/socket.js";
+import jwt from "jsonwebtoken";
 
 const app = express();
 const server = http.createServer(app);
@@ -28,15 +29,50 @@ export const initSocket = (server) => {
       // Set io instance in utility
       setIO(io);
 
+      // Middleware to verify token
+      io.use((socket, next) => {
+            const token = socket.handshake.auth.token;
+            if (!token) {
+                  return next(new Error("Authentication error"));
+            }
+
+            try {
+                  const decoded = jwt.verify(token, process.env.JWT_SECRET);
+                  socket.user = decoded;
+                  next();
+            } catch (err) {
+                  return next(new Error("Authentication error"));
+            }
+      });
+
       io.on("connection", (socket) => {
             console.log("New client connected:", socket.id);
 
             socket.on("setup", async (userId) => {
-                  socket.userId = userId;
-                  socket.join(userId);
-                  userSockets.set(userId, socket.id);
-                  socket.emit("connected");
-                  io.emit("user:status", { userId, isOnline: true });
+                  try {
+                        socket.userId = userId;
+                        socket.join(userId);
+                        userSockets.set(userId, socket.id);
+                        socket.emit("connected");
+
+                        // Update user's online status
+                        const student = await Student.findById(userId);
+                        if (student) {
+                              student.isOnline = true;
+                              await student.save();
+                        } else {
+                              const recruiter = await Recruiter.findById(userId);
+                              if (recruiter) {
+                                    recruiter.isOnline = true;
+                                    await recruiter.save();
+                              }
+                        }
+
+                        // Broadcast user's online status
+                        io.emit("user:status", { userId, isOnline: true });
+                  } catch (error) {
+                        console.error("Error in setup:", error);
+                  }
             });
 
             socket.on("typing:start", ({ receiverId }) => {
@@ -64,24 +100,27 @@ export const initSocket = (server) => {
                         const userId = socket.userId;
                         userSockets.delete(userId);
                         
-                        // Update lastSeen timestamp
                         try {
+                              // Update user's offline status and lastSeen
                               const student = await Student.findById(userId);
                               if (student) {
+                                    student.isOnline = false;
                                     student.lastSeen = new Date();
                                     await student.save();
                               } else {
                                     const recruiter = await Recruiter.findById(userId);
                                     if (recruiter) {
+                                          recruiter.isOnline = false;
                                           recruiter.lastSeen = new Date();
                                           await recruiter.save();
                                     }
                               }
-                        } catch (error) {
-                              console.error("Error updating lastSeen:", error);
-                        }
 
-                        io.emit("user:status", { userId, isOnline: false });
+                              // Broadcast user's offline status
+                              io.emit("user:status", { userId, isOnline: false });
+                        } catch (error) {
+                              console.error("Error updating user status:", error);
+                        }
                   }
             });
 
